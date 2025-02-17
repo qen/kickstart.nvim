@@ -102,7 +102,7 @@ vim.g.have_nerd_font = false
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -156,6 +156,23 @@ vim.opt.cursorline = true
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
 
+vim.opt.foldcolumn = '0'
+vim.opt.foldlevel = 2
+vim.opt.foldnestmax = 10
+vim.opt.foldmethod = 'expr'
+vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+vim.opt.foldmethod = 'expr'
+
+function _G.custom_fold_text()
+  local line = vim.fn.getline(vim.v.foldstart)
+
+  local line_count = vim.v.foldend - vim.v.foldstart + 1
+  return line .. ': ⚡ ' .. line_count .. ' lines'
+end
+vim.opt.foldtext = 'v:lua.custom_fold_text()'
+
+-- vim.wo.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -203,6 +220,12 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
+-- au BufNewFile,BufRead *.json.jbuilder set ft=ruby
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
+  pattern = { '*.json.jbuilder' },
+  command = 'set ft=ruby',
+})
+
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
@@ -214,6 +237,16 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
   end
 end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
+
+-- new file
+vim.keymap.set('n', '<c-n><c-f>', ':e <C-R>=fnamemodify(@%, ":h")<CR>/', { desc = 'Open current buffer file' })
+vim.keymap.set('n', '<c-n><c-n>', ':e<space>', { desc = 'Open file' })
+
+vim.keymap.set('n', '<Tab>q', ':bd!<CR>', { desc = 'Close current open buffer' })
+
+-- Copy full path filename with path to clipboard
+vim.keymap.set('n', '<F7>', ':let @*=expand("%")<CR>', { desc = 'Copy file path to clipboard' })
+vim.keymap.set('n', '<F8>', ':let @*=expand("%:p")<CR>', { desc = 'Copy full file path to clipboard' })
 
 -- [[ Configure and install plugins ]]
 --
@@ -278,7 +311,73 @@ require('lazy').setup({
   --
   -- Then, because we use the `opts` key (recommended), the configuration runs
   -- after the plugin has been loaded as `require(MODULE).setup(opts)`.
+  {
+    'tpope/vim-surround',
+    -- opts = {
+    --   surround_no_insert_mappings = 0,
+    -- },
+  },
+  { 'airblade/vim-gitgutter' },
+  { 'slim-template/vim-slim' },
+  {
+    'windwp/nvim-autopairs',
+    config = function()
+      local npairs = require 'nvim-autopairs'
+      npairs.setup { map_cr = true }
 
+      -- npairs.add_rules(require('nvim-autopairs.rules.endwise-elixir'))
+      npairs.add_rules(require 'nvim-autopairs.rules.endwise-lua')
+      npairs.add_rules(require 'nvim-autopairs.rules.endwise-ruby')
+    end,
+  },
+  {
+    'windwp/nvim-ts-autotag',
+    config = function()
+      require('nvim-ts-autotag').setup()
+    end,
+  },
+  { 'jparise/vim-graphql' },
+  { 'tpope/vim-haml' },
+  { 'numToStr/Comment.nvim' },
+  { 'tpope/vim-dispatch' },
+  {
+    'thoughtbot/vim-rspec',
+    config = function()
+      vim.g.rspec_command = 'Dispatch! bundle exec rspec -I . {spec}'
+      vim.g.rspec_runner = 'os_x_iterm2'
+      vim.g.dispatch_tmux_height = '50%'
+      vim.g.dispatch_quickfix_height = 15
+
+      -- local rspec = require 'vim-rspec'
+      vim.keymap.set('n', '\\t', function()
+        vim.fn.RunNearestSpec()
+        vim.cmd 'Copen'
+        vim.cmd.execute [["normal \<s-G>zb<CR>"]]
+      end, { desc = 'run nearest spec' })
+      vim.keymap.set('n', '\\\\', function()
+        vim.cmd 'Copen'
+        vim.cmd.execute [["normal \<s-G>zb<CR>"]]
+      end, { desc = 'open and refresh quick window' })
+      vim.keymap.set('n', '\\x', function()
+        vim.cmd 'cclose'
+      end, { desc = 'close quick window' })
+    end,
+  },
+  {
+    'kelly-lin/telescope-ag',
+    dependencies = { 'nvim-telescope/telescope.nvim' },
+  },
+  {
+    'deparr/tairiki.nvim',
+    lazy = false,
+    priority = 1000, -- only necessary if you use tairiki as default theme
+    config = function()
+      require('tairiki').setup {
+        -- optional configuration here
+      }
+      require('tairiki').load() -- only necessary to use as default theme, has same behavior as ':colorscheme tairiki'
+    end,
+  },
   { -- Useful plugin to show you pending keybinds.
     'folke/which-key.nvim',
     event = 'VimEnter', -- Sets the loading event to 'VimEnter'
@@ -325,12 +424,12 @@ require('lazy').setup({
 
       -- Document existing key chains
       spec = {
-        { '<leader>c', group = '[C]ode', mode = { 'n', 'x' } },
-        { '<leader>d', group = '[D]ocument' },
+        -- { '<leader>c', group = '[C]ode', mode = { 'n', 'x' } },
+        -- { '<leader>d', group = '[D]ocument' },
         { '<leader>r', group = '[R]ename' },
         { '<leader>s', group = '[S]earch' },
         { '<leader>w', group = '[W]orkspace' },
-        { '<leader>t', group = '[T]oggle' },
+        -- { '<leader>t', group = '[T]oggle' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
       },
     },
@@ -393,11 +492,28 @@ require('lazy').setup({
         -- You can put your default mappings / updates / etc. in here
         --  All the info you're looking for is in `:help telescope.setup()`
         --
-        -- defaults = {
-        --   mappings = {
-        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-        --   },
-        -- },
+        defaults = {
+          --   mappings = {
+          --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
+          --   },
+          file_ignore_patterns = {
+            'node_modules',
+            '.gist',
+            '.git',
+            'tmp',
+            'public/assets',
+            'public/packs',
+            'public/packs-test',
+            '.jpg',
+            '.gif',
+            '.zip',
+            '.min.js',
+            'log',
+            'vendor/cache',
+            'storage',
+          },
+          file_sorter = require('telescope.sorters').fuzzy_with_index_bias,
+        },
         -- pickers = {}
         extensions = {
           ['ui-select'] = {
@@ -409,28 +525,83 @@ require('lazy').setup({
       -- Enable Telescope extensions if they are installed
       pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
+      pcall(require('telescope').load_extension, 'ag')
 
       -- See `:help telescope.builtin`
       local builtin = require 'telescope.builtin'
+      local utils = require 'telescope.utils'
+      -- local telescope_ag = require 'telescope-ag'
+      -- telescope_ag.setup {
+      --   cmd = telescope_ag.cmds.rg, -- defaults to telescope_ag.cmds.ag
+      -- }
+
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-      vim.keymap.set('n', '<leader>sf', builtin.find_files, { desc = '[S]earch [F]iles' })
+
+      vim.keymap.set('n', '<leader>sf', function()
+        builtin.find_files {
+          cwd = vim.fn.getcwd(),
+          previewer = false,
+          -- cwd = vim.fn.getcwd() .. '/app',
+          -- search_file = vim.fn.fnamemodify(vim.fn.expand '%:t', ':r'),
+          -- search_file = vim.fn.fnamemodify(vim.fn.expand '%:t', ':r'):gsub('_controller', ''):gsub('.test', ''),
+          -- search_dirs = { './', 'lib', 'config' },
+        }
+      end, { desc = '[S]earch [F]iles in current working directory' })
+
+      vim.keymap.set('n', '<C-P>', function()
+        builtin.find_files {
+          cwd = vim.fn.getcwd(),
+          previewer = false,
+          -- no_ignore = false,
+          -- search_file = utils.buffer_dir(),
+          -- cwd = utils.buffer_dir(),
+          -- search_dirs = { utils.buffer_dir(), vim.fn.getcwd() },
+          search_dirs = { 'lib', 'config', 'app', utils.buffer_dir() },
+        }
+      end, { desc = '[S]earch [PF]iles in lib, config, app and current directory' })
+
+      vim.keymap.set('n', '<C-T>', function()
+        builtin.find_files {
+          cwd = vim.fn.getcwd(),
+          search_file = vim.fn.fnamemodify(vim.fn.expand '%:t', ':r'),
+          search_dirs = { 'spec', 'jest', 'test', 'features' },
+        }
+      end, { desc = '[S]earch test files ' })
+
+      vim.keymap.set('n', '<C-F>', builtin.buffers, { desc = '[S] Find existing [B]uffers' })
+
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
-      vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
-      vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+
+      -- vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
+      vim.keymap.set('n', '<leader>s.', function()
+        builtin.find_files {
+          cwd = vim.fn.getcwd(),
+          previewer = false,
+          -- cwd = vim.fn.getcwd() .. '/app',
+          -- search_file = vim.fn.fnamemodify(vim.fn.expand '%:t', ':r'),
+          search_file = vim.fn.fnamemodify(vim.fn.expand '%:t', ':r'):gsub('_controller', ''):gsub('.test', ''),
+          search_dirs = { 'app' },
+        }
+      end, { desc = '[S]earch [F]iles with similar name on app folder' })
+
+      -- vim.keymap.set('n', '<leader>sb', builtin.buffers, { desc = '[S] Find existing [B]uffers' })
 
       -- Slightly advanced example of overriding default behavior and theme
-      vim.keymap.set('n', '<leader>/', function()
+      vim.keymap.set('n', '<leader><leader>', function()
         -- You can pass additional configuration to Telescope to change the theme, layout, etc.
         builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
-          winblend = 10,
           previewer = false,
+          layout_config = {
+            height = 0.7,
+            width = 0.7,
+          },
         })
-      end, { desc = '[/] Fuzzily search in current buffer' })
+      end, { desc = '[ ] Fuzzily search in current buffer' })
 
       -- It's also possible to pass additional configuration options.
       --  See `:help telescope.builtin.live_grep()` for information about particular keys
@@ -536,11 +707,11 @@ require('lazy').setup({
           -- Jump to the type of the word under your cursor.
           --  Useful when you're not sure what type a variable is and you want to see
           --  the definition of its *type*, not where it was *defined*.
-          map('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
+          -- map('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
 
           -- Fuzzy find all the symbols in your current document.
           --  Symbols are things like variables, functions, types, etc.
-          map('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
+          map('<leader>d', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
 
           -- Fuzzy find all the symbols in your current workspace.
           --  Similar to document symbols, except searches over your entire project.
@@ -626,6 +797,15 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
+        ruby_lsp = {
+          -- cmd = { '/Users/qen/.rvm/gems/ruby-3.1.0@global/wrappers/ruby-lsp' },
+          cmd = { '/Users/qen/.rvm/gems/ruby-3.1.0@global/wrappers/ruby-lsp' },
+          -- cmd = { 'ruby-lsp' },
+          filetypes = { 'ruby' },
+          root_dir = function()
+            return vim.loop.cwd()
+          end,
+        },
         -- clangd = {},
         -- gopls = {},
         -- pyright = {},
@@ -908,6 +1088,7 @@ require('lazy').setup({
   },
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
+    dependencies = { 'nvim-treesitter/nvim-treesitter-refactor' },
     build = ':TSUpdate',
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
@@ -923,7 +1104,32 @@ require('lazy').setup({
         additional_vim_regex_highlighting = { 'ruby' },
       },
       indent = { enable = true, disable = { 'ruby' } },
+      refactor = {
+        highlight_definitions = {
+          enable = false,
+          -- Set to false if you have an `updatetime` of ~100.
+          clear_on_cursor_move = true,
+        },
+        highlight_current_scope = { enable = false },
+        smart_rename = {
+          enable = true,
+          keymaps = {
+            smart_rename = 'gR',
+          },
+        },
+        navigation = {
+          enable = true,
+          keymaps = {
+            goto_definition = 'gd',
+            list_definitions = 'gD',
+            list_definitions_toc = 'gO',
+            goto_next_usage = 'gn',
+            goto_previous_usage = 'gp',
+          },
+        },
+      },
     },
+    --
     -- There are additional nvim-treesitter modules that you can use to interact
     -- with nvim-treesitter. You should go explore a few and see what interests you:
     --

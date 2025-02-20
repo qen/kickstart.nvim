@@ -162,6 +162,7 @@ vim.opt.foldnestmax = 10
 vim.opt.foldmethod = 'expr'
 vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
 vim.opt.foldmethod = 'expr'
+vim.opt.wrap = false
 
 function _G.custom_fold_text()
   local line = vim.fn.getline(vim.v.foldstart)
@@ -201,10 +202,10 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 --  Use CTRL+<hjkl> to switch between windows
 --
 --  See `:help wincmd` for a list of all window commands
-vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
-vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
-vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
-vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+-- vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
+-- vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
+-- vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
+-- vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
@@ -248,6 +249,8 @@ vim.keymap.set('n', '<Tab>q', ':bd!<CR>', { desc = 'Close current open buffer' }
 vim.keymap.set('n', '<F7>', ':let @*=expand("%")<CR>', { desc = 'Copy file path to clipboard' })
 vim.keymap.set('n', '<F8>', ':let @*=expand("%:p")<CR>', { desc = 'Copy full file path to clipboard' })
 
+vim.keymap.set('n', '<C-j>', '<C-^>', { desc = 'jump previous open file', noremap = true, silent = true })
+
 -- [[ Configure and install plugins ]]
 --
 --  To check the current status of your plugins, run
@@ -261,7 +264,9 @@ vim.keymap.set('n', '<F8>', ':let @*=expand("%:p")<CR>', { desc = 'Copy full fil
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  { -- vim-sleuth:
+    'tpope/vim-sleuth',
+  }, -- Detect tabstop and shiftwidth automatically
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -285,18 +290,19 @@ require('lazy').setup({
   -- options to `gitsigns.nvim`.
   --
   -- See `:help gitsigns` to understand what the configuration keys do
-  { -- Adds git related signs to the gutter, as well as utilities for managing changes
-    'lewis6991/gitsigns.nvim',
-    opts = {
-      signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-        topdelete = { text = '‾' },
-        changedelete = { text = '~' },
-      },
-    },
-  },
+
+  -- { -- gitsigns: Adds git related signs to the gutter, as well as utilities for managing changes
+  --   'lewis6991/gitsigns.nvim',
+  --   opts = {
+  --     signs = {
+  --       add = { text = '+' },
+  --       change = { text = '~' },
+  --       delete = { text = '_' },
+  --       topdelete = { text = '‾' },
+  --       changedelete = { text = '~' },
+  --     },
+  --   },
+  -- },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --
@@ -311,15 +317,76 @@ require('lazy').setup({
   --
   -- Then, because we use the `opts` key (recommended), the configuration runs
   -- after the plugin has been loaded as `require(MODULE).setup(opts)`.
-  {
+  { -- vim-surround
     'tpope/vim-surround',
     -- opts = {
     --   surround_no_insert_mappings = 0,
     -- },
   },
-  { 'airblade/vim-gitgutter' },
-  { 'slim-template/vim-slim' },
-  {
+
+  { -- vim-fugitive
+    'tpope/vim-fugitive',
+    dependencies = {
+      'tpope/vim-rhubarb',
+      {
+        'FabijanZulj/blame.nvim',
+        lazy = false,
+        config = function()
+          require('blame').setup {}
+          vim.api.nvim_set_keymap('n', '<leader>gh', ':BlameToggle<CR>', { desc = 'Explore commit [H]istory', noremap = true, silent = true })
+          vim.api.nvim_set_keymap('n', '<leader>tb', ':BlameToggle virtual<CR>', { desc = '[T]oggle virtual [B]lame', noremap = true, silent = true })
+        end,
+        opts = {
+          blame_options = { '-w' },
+        },
+      },
+    },
+    config = function()
+      vim.keymap.set('n', '<leader>go', function()
+        vim.cmd 'Git blame'
+        vim.cmd.execute [["normal o"]]
+        vim.cmd 'GB'
+        vim.cmd.execute [["normal \<C-W>q"]]
+        vim.cmd.execute [["normal \<C-W>q"]]
+      end, { desc = '[O]pen commit in browser' })
+
+      vim.keymap.set('n', '<BS>1', ':diffget 1<CR>', { desc = 'diff get 1' })
+      vim.keymap.set('n', '<BS>2', ':diffget 2<CR>', { desc = 'diff get 2' })
+      vim.keymap.set('n', '<BS>3', ':diffget 3<CR>', { desc = 'diff get 3' })
+      vim.keymap.set('n', '<BS>R', ':%diffget REMOTE<CR>', { desc = 'diff get all remote, the branch merging' })
+      vim.keymap.set('n', '<BS>L', ':%diffget LOCAL<CR>', { desc = 'diff get all local, current checkout branch' })
+    end,
+  },
+
+  -- {
+  --   'pwntester/octo.nvim',
+  --   dependencies = {
+  --     'nvim-lua/plenary.nvim',
+  --     'nvim-telescope/telescope.nvim',
+  --     'ibhagwan/fzf-lua',
+  --     'folke/snacks.nvim',
+  --     'nvim-tree/nvim-web-devicons',
+  --   },
+  --   config = function()
+  --     require('octo').setup()
+  --   end,
+  -- },
+  -- {
+  --   'ldelossa/gh.nvim',
+  --   dependencies = {
+  --     {
+  --       'ldelossa/litee.nvim',
+  --       config = function()
+  --         require('litee.lib').setup()
+  --       end,
+  --     },
+  --   },
+  --   config = function()
+  --     require('litee.gh').setup()
+  --   end,
+  -- },
+
+  { -- nvim-autopairs
     'windwp/nvim-autopairs',
     config = function()
       local npairs = require 'nvim-autopairs'
@@ -330,55 +397,186 @@ require('lazy').setup({
       npairs.add_rules(require 'nvim-autopairs.rules.endwise-ruby')
     end,
   },
-  {
+
+  { -- nvim-ts-autotag
     'windwp/nvim-ts-autotag',
     config = function()
       require('nvim-ts-autotag').setup()
     end,
   },
-  { 'jparise/vim-graphql' },
-  { 'tpope/vim-haml' },
-  { 'numToStr/Comment.nvim' },
-  { 'tpope/vim-dispatch' },
-  {
+
+  { -- vim-slim
+    'slim-template/vim-slim',
+  },
+
+  { -- vim-graphql
+    'jparise/vim-graphql',
+  },
+
+  { -- vim-haml:
+    'tpope/vim-haml',
+  },
+
+  { -- Comment
+    'numToStr/Comment.nvim',
+  },
+
+  { -- vim-rspec
     'thoughtbot/vim-rspec',
+    dependencies = {
+      'tpope/vim-dispatch',
+    },
     config = function()
-      vim.g.rspec_command = 'Dispatch! bundle exec rspec -I . {spec}'
+      -- vim.g.rspec_command = 'Dispatch! bundle exec rspec -I . {spec}'
+      vim.g.rspec_command = 'Start bundle exec rspec -I . {spec}'
       vim.g.rspec_runner = 'os_x_iterm2'
       vim.g.dispatch_tmux_height = '50%'
       vim.g.dispatch_quickfix_height = 15
 
       -- local rspec = require 'vim-rspec'
+
       vim.keymap.set('n', '\\t', function()
         vim.fn.RunNearestSpec()
-        vim.cmd 'Copen'
-        vim.cmd.execute [["normal \<s-G>zb<CR>"]]
+        -- vim.cmd 'Copen'
+        -- vim.cmd.execute [["normal \<s-G>zb<CR>"]]
       end, { desc = 'run nearest spec' })
+
       vim.keymap.set('n', '\\\\', function()
-        vim.cmd 'Copen'
-        vim.cmd.execute [["normal \<s-G>zb<CR>"]]
-      end, { desc = 'open and refresh quick window' })
-      vim.keymap.set('n', '\\x', function()
-        vim.cmd 'cclose'
-      end, { desc = 'close quick window' })
+        vim.fn.RunLastSpec()
+        -- vim.cmd 'Copen'
+        -- vim.cmd.execute [["normal \<s-G>zb<CR>"]]
+      end, { desc = 'run last spec' })
+
+      -- vim.keymap.set('n', '\\<BS>', function()
+      --   vim.cmd 'cclose'
+      -- end, { desc = 'close quick window' })
+
+      vim.keymap.set('n', '\\d', function()
+        vim.cmd.execute [["normal \<s-O>binding.pry\<ESC>:w\<CR>"]]
+      end, { desc = 'insert binding.pry' })
     end,
   },
-  {
-    'kelly-lin/telescope-ag',
-    dependencies = { 'nvim-telescope/telescope.nvim' },
-  },
-  {
-    'deparr/tairiki.nvim',
-    lazy = false,
-    priority = 1000, -- only necessary if you use tairiki as default theme
+
+  { -- theme onedark
+    'navarasu/onedark.nvim',
     config = function()
-      require('tairiki').setup {
-        -- optional configuration here
+      require('onedark').setup {
+        -- Main options --
+        style = 'warmer', -- Default theme style. Choose between 'dark', 'darker', 'cool', 'deep', 'warm', 'warmer' and 'light'
+        -- transparent = false, -- Show/hide background
+        -- term_colors = true, -- Change terminal color as per the selected theme style
+        -- ending_tildes = false, -- Show the end-of-buffer tildes. By default they are hidden
+        -- cmp_itemkind_reverse = false, -- reverse item kind highlights in cmp menu
+        --
+        -- -- toggle theme style ---
+        -- toggle_style_key = nil, -- keybind to toggle theme style. Leave it nil to disable it, or set it to a string, for example "<leader>ts"
+        -- toggle_style_list = { 'dark', 'darker', 'cool', 'deep', 'warm', 'warmer', 'light' }, -- List of styles to toggle between
+        --
+        -- -- Change code style ---
+        -- -- Options are italic, bold, underline, none
+        -- -- You can configure multiple style with comma separated, For e.g., keywords = 'italic,bold'
+        -- code_style = {
+        --   comments = 'italic',
+        --   keywords = 'none',
+        --   functions = 'none',
+        --   strings = 'none',
+        --   variables = 'none',
+        -- },
+        --
+        -- -- Lualine options --
+        -- lualine = {
+        --   transparent = false, -- lualine center bar transparency
+        -- },
+        --
+        -- -- Custom Highlights --
+        -- colors = {}, -- Override default colors
+        -- highlights = {}, -- Override highlight groups
+        --
+        -- -- Plugins Config --
+        -- diagnostics = {
+        --   darker = true, -- darker colors for diagnostic
+        --   undercurl = true, -- use undercurl instead of underline for diagnostics
+        --   background = true, -- use background color for virtual text
+        -- },
       }
-      require('tairiki').load() -- only necessary to use as default theme, has same behavior as ':colorscheme tairiki'
+      require('onedark').load()
     end,
   },
-  { -- Useful plugin to show you pending keybinds.
+  -- {
+  --   'ribru17/bamboo.nvim',
+  --   lazy = false,
+  --   priority = 1000,
+  --   config = function()
+  --     require('bamboo').setup {
+  --       -- optional configuration here
+  --     }
+  --     require('bamboo').load()
+  --     vim.cmd.colorscheme 'bamboo'
+  --   end,
+  -- },
+  -- { -- kanagawa-paper.nvim
+  --   'thesimonho/kanagawa-paper.nvim',
+  --   lazy = false,
+  --   priority = 1000,
+  --   config = function()
+  --     require('kanagawa-paper').setup {
+  --       undercurl = true,
+  --       transparent = false,
+  --       gutter = false,
+  --       dimInactive = true, -- disabled when transparent
+  --       terminalColors = true,
+  --       commentStyle = { italic = true },
+  --       functionStyle = { italic = false },
+  --       keywordStyle = { italic = false, bold = false },
+  --       statementStyle = { italic = false, bold = false },
+  --       typeStyle = { italic = false },
+  --       colors = { theme = {}, palette = {} }, -- override default palette and theme colors
+  --       overrides = function() -- override highlight groups
+  --         return {}
+  --       end,
+  --     }
+  --     vim.cmd.colorscheme 'kanagawa-paper'
+  --   end,
+  -- },
+  -- { -- melange-nvim colorsche
+  --   'savq/melange-nvim',
+  --   config = function()
+  --     vim.opt.termguicolors = true
+  --     vim.cmd.colorscheme 'melange'
+  --   end,
+  -- },
+  -- { -- gruvbox-material
+  --   'sainnhe/gruvbox-material',
+  --   lazy = false,
+  --   priority = 1000,
+  --   config = function()
+  --     -- Optionally configure and load the colorscheme
+  --     -- directly inside the plugin declaration.
+  --     vim.g.gruvbox_material_enable_italic = false
+  --     vim.g.gruvbox_material_background = 'soft'
+  --     vim.cmd.colorscheme 'gruvbox-material'
+  --   end,
+  -- },
+  -- { -- makurai color theme
+  --   'Skardyy/makurai-nvim',
+  --   config = function()
+  --     vim.cmd.colorscheme 'makurai'
+  --   end,
+  -- },
+  -- { -- tairiki.nvim
+  --   'deparr/tairiki.nvim',
+  --   lazy = false,
+  --   priority = 1000, -- only necessary if you use tairiki as default theme
+  --   config = function()
+  --     require('tairiki').setup {
+  --       -- optional configuration here
+  --       style = 'light',
+  --     }
+  --     require('tairiki').load() -- only necessary to use as default theme, has same behavior as ':colorscheme tairiki'
+  --   end,
+  -- },
+
+  { -- which-key: Useful plugin to show you pending keybinds.
     'folke/which-key.nvim',
     event = 'VimEnter', -- Sets the loading event to 'VimEnter'
     opts = {
@@ -425,12 +623,15 @@ require('lazy').setup({
       -- Document existing key chains
       spec = {
         -- { '<leader>c', group = '[C]ode', mode = { 'n', 'x' } },
-        -- { '<leader>d', group = '[D]ocument' },
+        { '<leader>d', group = '[D]ocument symbols search' },
         { '<leader>r', group = '[R]ename' },
         { '<leader>s', group = '[S]earch' },
         { '<leader>w', group = '[W]orkspace' },
-        -- { '<leader>t', group = '[T]oggle' },
+        { '<leader>g', group = '[G]it blames' },
+        { '<leader>t', group = '[T]oggle' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        { '<C-P>', group = '[P]finding files' },
+        { '\\', hidden = true },
       },
     },
   },
@@ -442,13 +643,16 @@ require('lazy').setup({
   --
   -- Use the `dependencies` key to specify the dependencies of a particular plugin
 
-  { -- Fuzzy Finder (files, lsp, etc)
+  { -- telescope: Fuzzy Finder (files, lsp, etc)
     'nvim-telescope/telescope.nvim',
     event = 'VimEnter',
     branch = '0.1.x',
     dependencies = {
-      'nvim-lua/plenary.nvim',
-      { -- If encountering errors, see telescope-fzf-native README for installation instructions
+      { -- plenary.nvim:
+        'nvim-lua/plenary.nvim',
+      },
+
+      { -- telescope-fzf-native: If encountering errors, see telescope-fzf-native README for installation instructions
         'nvim-telescope/telescope-fzf-native.nvim',
 
         -- `build` is used to run some command when the plugin is installed/updated.
@@ -461,10 +665,112 @@ require('lazy').setup({
           return vim.fn.executable 'make' == 1
         end,
       },
-      { 'nvim-telescope/telescope-ui-select.nvim' },
+
+      { -- telescope-ui-select.nvim
+        'nvim-telescope/telescope-ui-select.nvim',
+      },
 
       -- Useful for getting pretty icons, but requires a Nerd Font.
-      { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
+      { -- nvim-web-devicons
+        'nvim-tree/nvim-web-devicons',
+        enabled = vim.g.have_nerd_font,
+      },
+
+      { -- axkirillov/easypick.nvim:
+        'axkirillov/easypick.nvim',
+        config = function()
+          local easypick = require 'easypick'
+
+          -- only required for the example to work
+          -- local get_default_branch = "git remote show origin | grep 'HEAD branch' | cut -d' ' -f5"
+          -- local base_branch = vim.fn.system(get_default_branch) or 'master'
+          local base_branch = 'master'
+
+          easypick.setup {
+            pickers = {
+              -- add your custom pickers here
+              -- below you can find some examples of what those can look like
+
+              -- list files inside current folder with default previewer
+              {
+                -- name for your custom picker, that can be invoked using :Easypick <name> (supports tab completion)
+                name = 'ls',
+                -- the command to execute, output has to be a list of plain text entries
+                command = 'ls',
+                -- specify your custom previwer, or use one of the easypick.previewers
+                previewer = easypick.previewers.default(),
+              },
+
+              -- diff current branch with base_branch and show files that changed with respective diffs in preview
+              {
+                name = 'changed_files',
+                command = 'git diff --name-only $(git merge-base HEAD ' .. base_branch .. ' )',
+                previewer = easypick.previewers.branch_diff { base_branch = base_branch },
+              },
+
+              -- list files that have conflicts with diffs in preview
+              {
+                name = 'conflicts',
+                command = 'git diff --name-only --diff-filter=U --relative',
+                previewer = easypick.previewers.file_diff(),
+              },
+            },
+          }
+        end,
+      },
+
+      { -- telescope-file-browser.nvim
+        'nvim-telescope/telescope-file-browser.nvim',
+      },
+
+      { -- telescope-ag
+        'kelly-lin/telescope-ag',
+        dependencies = { 'nvim-telescope/telescope.nvim' },
+        config = function()
+          vim.keymap.set('v', '<leader>sw', function()
+            local function get_visual_selection()
+              local esc = vim.api.nvim_replace_termcodes('<esc>', true, false, true)
+              vim.api.nvim_feedkeys(esc, 'x', false)
+              local vstart = vim.fn.getpos "'<"
+              local vend = vim.fn.getpos "'>"
+              return table.concat(vim.fn.getregion(vstart, vend), '\n')
+            end
+
+            local query = get_visual_selection()
+            vim.cmd('Ag ' .. query)
+          end, { desc = 'search word selection' })
+
+          local telescope_ag = require 'telescope-ag'
+          telescope_ag.setup {
+            cmd = telescope_ag.cmds.rg, -- defaults to telescope_ag.cmds.ag
+          }
+        end,
+      },
+
+      -- { -- neoscopes
+      --   'smartpde/neoscopes',
+      --   config = function()
+      --     local scopes = require 'neoscopes'
+      --
+      --     scopes.setup {
+      --       diff_branches_for_scopes = { 'master', 'origin/master' },
+      --     }
+      --     -- Helper functions to fetch the current scope and set `search_dirs`
+      --     _G.find_files = function()
+      --       require('telescope.builtin').find_files {
+      --         search_dirs = scopes.get_current_dirs(),
+      --       }
+      --     end
+      --     _G.live_grep = function()
+      --       require('telescope.builtin').live_grep {
+      --         search_dirs = scopes.get_current_dirs(),
+      --       }
+      --     end
+      --
+      --     vim.api.nvim_set_keymap('n', '<Leader>ff', ':lua find_files()<CR>', { noremap = true })
+      --     vim.api.nvim_set_keymap('n', '<Leader>fg', ':lua live_grep()<CR>', { noremap = true })
+      --   end,
+      -- },
     },
     config = function()
       -- Telescope is a fuzzy finder that comes with a lot of different things that
@@ -496,28 +802,86 @@ require('lazy').setup({
           --   mappings = {
           --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
           --   },
-          file_ignore_patterns = {
-            'node_modules',
-            '.gist',
-            '.git',
-            'tmp',
-            'public/assets',
-            'public/packs',
-            'public/packs-test',
-            '.jpg',
-            '.gif',
-            '.zip',
-            '.min.js',
-            'log',
-            'vendor/cache',
-            'storage',
-          },
+          -- file_ignore_patterns = {
+          --   'node_modules',
+          --   '.gist',
+          --   '.git',
+          --   'tmp',
+          --   'public/assets',
+          --   'public/packs',
+          --   'public/packs-test',
+          --   '.jpg',
+          --   '.gif',
+          --   '.zip',
+          --   '.min.js',
+          --   'log',
+          --   'vendor/cache',
+          --   'storage',
+          -- },
           file_sorter = require('telescope.sorters').fuzzy_with_index_bias,
+          vimgrep_arguments = {
+            'rg',
+            '--color=never',
+            '--no-heading',
+            '--with-filename',
+            '--line-number',
+            '--column',
+            '--smart-case',
+            '--trim', -- add this value
+          },
         },
-        -- pickers = {}
+        -- pickers = {
+        --   find_files = {
+        --     mappings = {
+        --       n = {
+        --         ['cd'] = function(prompt_bufnr)
+        --           local selection = require('telescope.actions.state').get_selected_entry()
+        --           local dir = vim.fn.fnamemodify(selection.path, ':p:h')
+        --           require('telescope.actions').close(prompt_bufnr)
+        --           -- Depending on what you want put `cd`, `lcd`, `tcd`
+        --           vim.cmd(string.format('silent lcd %s', dir))
+        --         end,
+        --       },
+        --     },
+        --   },
+        -- },
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
+          },
+        },
+      }
+
+      local action_state = require 'telescope.actions.state'
+      local actions = require 'telescope.actions'
+
+      -- live_grep on file browser current directory
+      -- NOTE: need ripgrep
+      local function ripgrep_current_folder(prompt_bufnr)
+        local current_picker = action_state.get_current_picker(prompt_bufnr)
+        local finder = current_picker.finder
+        local dir = vim.fn.fnamemodify(finder.path, ':~:.')
+        actions.close(prompt_bufnr)
+        require('telescope.builtin').live_grep {
+          prompt_title = dir,
+          search_dirs = { dir },
+        }
+      end
+
+      require('telescope').setup {
+        extensions = {
+          file_browser = {
+            theme = 'ivy',
+            -- disables netrw and use telescope-file-browser in its place
+            hijack_netrw = true,
+            mappings = {
+              ['i'] = {
+                ['<C-r>'] = ripgrep_current_folder,
+              },
+              ['n'] = {
+                ['<C-r>'] = ripgrep_current_folder,
+              },
+            },
           },
         },
       }
@@ -526,50 +890,13 @@ require('lazy').setup({
       pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
       pcall(require('telescope').load_extension, 'ag')
+      pcall(require('telescope').load_extension, 'file_browser')
 
       -- See `:help telescope.builtin`
       local builtin = require 'telescope.builtin'
-      local utils = require 'telescope.utils'
-      -- local telescope_ag = require 'telescope-ag'
-      -- telescope_ag.setup {
-      --   cmd = telescope_ag.cmds.rg, -- defaults to telescope_ag.cmds.ag
-      -- }
 
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-
-      vim.keymap.set('n', '<leader>sf', function()
-        builtin.find_files {
-          cwd = vim.fn.getcwd(),
-          previewer = false,
-          -- cwd = vim.fn.getcwd() .. '/app',
-          -- search_file = vim.fn.fnamemodify(vim.fn.expand '%:t', ':r'),
-          -- search_file = vim.fn.fnamemodify(vim.fn.expand '%:t', ':r'):gsub('_controller', ''):gsub('.test', ''),
-          -- search_dirs = { './', 'lib', 'config' },
-        }
-      end, { desc = '[S]earch [F]iles in current working directory' })
-
-      vim.keymap.set('n', '<C-P>', function()
-        builtin.find_files {
-          cwd = vim.fn.getcwd(),
-          previewer = false,
-          -- no_ignore = false,
-          -- search_file = utils.buffer_dir(),
-          -- cwd = utils.buffer_dir(),
-          -- search_dirs = { utils.buffer_dir(), vim.fn.getcwd() },
-          search_dirs = { 'lib', 'config', 'app', utils.buffer_dir() },
-        }
-      end, { desc = '[S]earch [PF]iles in lib, config, app and current directory' })
-
-      vim.keymap.set('n', '<C-T>', function()
-        builtin.find_files {
-          cwd = vim.fn.getcwd(),
-          search_file = vim.fn.fnamemodify(vim.fn.expand '%:t', ':r'),
-          search_dirs = { 'spec', 'jest', 'test', 'features' },
-        }
-      end, { desc = '[S]earch test files ' })
-
-      vim.keymap.set('n', '<C-F>', builtin.buffers, { desc = '[S] Find existing [B]uffers' })
 
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
@@ -577,19 +904,87 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
 
-      -- vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
-      vim.keymap.set('n', '<leader>s.', function()
+      vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
+
+      local file_name_suffixes = {
+        '_controller$',
+        '_spec$',
+        '_service$',
+        '_policy$',
+        '_job$',
+      }
+
+      local function similar_document_name()
+        local filename = string.gsub(vim.fn.expand '%:t:r:r:r:r', '^%W', '')
+        local name = filename
+
+        for _, suffix in ipairs(file_name_suffixes) do
+          name = name:gsub(suffix, '')
+        end
+
+        return name
+      end
+
+      -- Pinding piles  of files
+      vim.keymap.set('n', '<C-P><C-N>', function()
+        local query = similar_document_name()
         builtin.find_files {
           cwd = vim.fn.getcwd(),
           previewer = false,
-          -- cwd = vim.fn.getcwd() .. '/app',
-          -- search_file = vim.fn.fnamemodify(vim.fn.expand '%:t', ':r'),
-          search_file = vim.fn.fnamemodify(vim.fn.expand '%:t', ':r'):gsub('_controller', ''):gsub('.test', ''),
-          search_dirs = { 'app' },
+          search_file = query,
+          prompt_title = '🔎 similar name to > ' .. query,
+          prompt_prefix = '🔎 > ',
+          search_dirs = { 'spec', 'jest', 'test', 'features' },
         }
-      end, { desc = '[S]earch [F]iles with similar name on app folder' })
+      end, { desc = '🔎 [P]find similar [N]ame on app folders' })
 
-      -- vim.keymap.set('n', '<leader>sb', builtin.buffers, { desc = '[S] Find existing [B]uffers' })
+      -- vim.keymap.set('n', '<C-P><C-S>', function()
+      --   local query = similar_document_name()
+      --   builtin.find_files {
+      --     cwd = vim.fn.getcwd(),
+      --     previewer = false,
+      --     prompt_title = '🧪 found for > ' .. query,
+      --     prompt_prefix = '🧪 > ',
+      --     search_file = vim.fn.fnamemodify(vim.fn.expand '%:t', ':r'),
+      --     search_dirs = { 'spec', 'jest', 'test', 'features' },
+      --   }
+      -- end, { desc = '🧪 [P]find [S]pec or test files ' })
+
+      vim.keymap.set('n', '<C-P><C-P>', function()
+        builtin.find_files {
+          cwd = vim.fn.getcwd(),
+          previewer = false,
+          prompt_prefix = '🗂️ > ',
+          search_dirs = { 'packs', 'app' },
+        }
+      end, { desc = '🗂️ [P]find [P]files in app folder' })
+
+      vim.keymap.set('n', '<C-P><C-F>', function()
+        builtin.buffers {
+          prompt_title = 'Files opened',
+          prompt_prefix = '📑 > ',
+        }
+      end, { desc = '📑 [P]find opened [F]iles' })
+
+      vim.keymap.set('n', '<C-P><C-D>', function()
+        require('telescope').extensions.file_browser.file_browser {
+          path = '%:p:h',
+          select_buffer = true,
+        }
+      end, { desc = '📂 [P]Browse buffer [D]irectory' })
+
+      vim.keymap.set('n', '<C-P><C-W>', function()
+        -- builtin.find_files {
+        --   cwd = vim.fn.getcwd(),
+        --   previewer = false,
+        --   prompt_prefix = '🗃️ > ',
+        -- }
+        vim.cmd 'Telescope file_browser'
+      end, { desc = '🗃️ [P]Browse [W]orking directory' })
+
+      vim.keymap.set('n', '<C-P><C-G>', function()
+        vim.cmd 'Easypick changed_files'
+      end, { desc = '🗄️ [P]find [G]it changed files' })
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader><leader>', function()
@@ -620,8 +1015,7 @@ require('lazy').setup({
   },
 
   -- LSP Plugins
-  {
-    -- `lazydev` configures Lua LSP for your Neovim config, runtime and plugins
+  { -- lazydev: configures Lua LSP for your Neovim config, runtime and plugins
     -- used for completion, annotations and signatures of Neovim apis
     'folke/lazydev.nvim',
     ft = 'lua',
@@ -632,8 +1026,8 @@ require('lazy').setup({
       },
     },
   },
-  {
-    -- Main LSP Configuration
+
+  { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language server
     'neovim/nvim-lspconfig',
     dependencies = {
       -- Automatically install LSPs and related tools to stdpath for Neovim
@@ -711,11 +1105,11 @@ require('lazy').setup({
 
           -- Fuzzy find all the symbols in your current document.
           --  Symbols are things like variables, functions, types, etc.
-          map('<leader>d', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
+          map('<leader>dd', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
 
           -- Fuzzy find all the symbols in your current workspace.
           --  Similar to document symbols, except searches over your entire project.
-          map('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
+          map('<leader>dw', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
 
           -- Rename the variable under your cursor.
           --  Most Language Servers support renaming across files, etc.
@@ -723,7 +1117,7 @@ require('lazy').setup({
 
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
-          map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction', { 'n', 'x' })
+          map('<leader>tc', vim.lsp.buf.code_action, '[T]oggle [C]ode Action', { 'n', 'x' })
 
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header.
@@ -798,13 +1192,26 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         ruby_lsp = {
+          mason = false,
           -- cmd = { '/Users/qen/.rvm/gems/ruby-3.1.0@global/wrappers/ruby-lsp' },
-          cmd = { '/Users/qen/.rvm/gems/ruby-3.1.0@global/wrappers/ruby-lsp' },
-          -- cmd = { 'ruby-lsp' },
+          -- cmd_env = { BUNDLE_GEMFILE = '/Users/qen/Projects/ruby-lsp/Gemfile' },
+          -- cmd = { 'ruby-lsp' }, -- works on wecasa project
+          -- cmd = { 'bundle', 'exec', '--gemfile', '/Users/qen/Projects/ruby-lsp/Gemfile', 'ruby-lsp' },
+          -- cmd_env = { BUNDLE_GEMFILE = '/Users/qen/Projects/ruby-lsp/Gemfile' },
+          --
+          cmd = { 'bundle', 'exec', 'ruby-lsp' }, -- works on wecasa project
+          -- cmd = { '/Users/qen/.rvm/gems/ruby-3.1.0@global/wrappers/ruby-lsp' }, -- works on talkpush
           filetypes = { 'ruby' },
           root_dir = function()
             return vim.loop.cwd()
           end,
+          -- init_options = {
+          --   formatter = 'none',
+          --   enabledFeatures = {
+          --     diagnostics = false,
+          --     codeActions = false,
+          --   },
+          -- },
         },
         -- clangd = {},
         -- gopls = {},
@@ -869,7 +1276,7 @@ require('lazy').setup({
     end,
   },
 
-  { -- Autoformat
+  { -- conform: Autoformat
     'stevearc/conform.nvim',
     event = { 'BufWritePre' },
     cmd = { 'ConformInfo' },
@@ -912,7 +1319,7 @@ require('lazy').setup({
     },
   },
 
-  { -- Autocompletion
+  { -- nvim-cmp: Autocompletion
     'hrsh7th/nvim-cmp',
     event = 'InsertEnter',
     dependencies = {
@@ -1028,28 +1435,33 @@ require('lazy').setup({
     end,
   },
 
-  { -- You can easily change to a different colorscheme.
-    -- Change the name of the colorscheme plugin below, and then
-    -- change the command in the config to whatever the name of that colorscheme is.
-    --
-    -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
-    priority = 1000, -- Make sure to load this before all the other start plugins.
-    init = function()
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
-
-      -- You can configure highlights by doing something like:
-      vim.cmd.hi 'Comment gui=none'
-    end,
-  },
+  -- { -- You can easily change to a different colorscheme.
+  --   -- Change the name of the colorscheme plugin below, and then
+  --   -- change the command in the config to whatever the name of that colorscheme is.
+  --   --
+  --   -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
+  --   'folke/tokyonight.nvim',
+  --   priority = 1000, -- Make sure to load this before all the other start plugins.
+  --   init = function()
+  --     -- Load the colorscheme here.
+  --     -- Like many other themes, this one has different styles, and you could load
+  --     -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
+  --     vim.cmd.colorscheme 'tokyonight-moon'
+  --
+  --     -- You can configure highlights by doing something like:
+  --     -- vim.cmd.hi 'Comment gui=none'
+  --   end,
+  -- },
 
   -- Highlight todo, notes, etc in comments
-  { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
+  { -- todo-comments.nvim
+    'folke/todo-comments.nvim',
+    event = 'VimEnter',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    opts = { signs = false },
+  },
 
-  { -- Collection of various small independent plugins/modules
+  { -- mini-nvim: Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
     config = function()
       -- Better Around/Inside textobjects
@@ -1065,14 +1477,26 @@ require('lazy').setup({
       -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
       -- - sd'   - [S]urround [D]elete [']quotes
       -- - sr)'  - [S]urround [R]eplace [)] [']
-      require('mini.surround').setup()
+      -- require('mini.surround').setup()
+
+      require('mini.jump').setup()
+      require('mini.icons').setup {
+        -- brew install font-hack-nerd-font
+        -- setup iterm2 Profile font
+        style = 'glyph',
+      }
+      require('mini.git').setup()
+      require('mini.diff').setup()
 
       -- Simple and easy statusline.
       --  You could remove this setup call if you don't like it,
       --  and try some other statusline plugin
       local statusline = require 'mini.statusline'
       -- set use_icons to true if you have a Nerd Font
-      statusline.setup { use_icons = vim.g.have_nerd_font }
+      statusline.setup {
+        use_icons = true,
+        set_vim_settings = true,
+      }
 
       -- You can configure sections in the statusline by overriding their
       -- default behavior. For example, here we set the section for
@@ -1086,7 +1510,8 @@ require('lazy').setup({
       --  Check out: https://github.com/echasnovski/mini.nvim
     end,
   },
-  { -- Highlight, edit, and navigate code
+
+  { -- nvim-treesitter: Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     dependencies = { 'nvim-treesitter/nvim-treesitter-refactor' },
     build = ':TSUpdate',

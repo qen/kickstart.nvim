@@ -91,7 +91,10 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
+
+-- lua print(vim.inspect(vim.fs.find({ 'Gemfile',  'package.json' }, { upward = true })))
+vim.g.run_ruby_lsp = not vim.tbl_isempty(vim.fs.find({ 'Gemfile' }, { upward = false }))
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -317,12 +320,13 @@ require('lazy').setup({
   --
   -- Then, because we use the `opts` key (recommended), the configuration runs
   -- after the plugin has been loaded as `require(MODULE).setup(opts)`.
-  { -- vim-surround
-    'tpope/vim-surround',
-    -- opts = {
-    --   surround_no_insert_mappings = 0,
-    -- },
-  },
+  --
+  -- { -- vim-surround
+  --   'tpope/vim-surround',
+  --   -- opts = {
+  --   --   surround_no_insert_mappings = 0,
+  --   -- },
+  -- },
 
   { -- vim-fugitive
     'tpope/vim-fugitive',
@@ -428,7 +432,7 @@ require('lazy').setup({
     },
     config = function()
       -- vim.g.rspec_command = 'Dispatch! bundle exec rspec -I . {spec}'
-      vim.g.rspec_command = 'Start bundle exec rspec -I . {spec}'
+      vim.g.rspec_command = 'Dispatch! bundle exec rspec -I . {spec}'
       vim.g.rspec_runner = 'os_x_iterm2'
       vim.g.dispatch_tmux_height = '50%'
       vim.g.dispatch_quickfix_height = 15
@@ -436,34 +440,53 @@ require('lazy').setup({
       -- local rspec = require 'vim-rspec'
 
       vim.keymap.set('n', '\\t', function()
+        vim.cmd.execute [[":w\<CR>"]]
         vim.fn.RunNearestSpec()
         -- vim.cmd 'Copen'
         -- vim.cmd.execute [["normal \<s-G>zb<CR>"]]
       end, { desc = 'run nearest spec' })
 
-      vim.keymap.set('n', '\\\\', function()
+      vim.keymap.set('n', '\\<BS>', function()
+        vim.cmd.execute [[":w\<CR>"]]
         vim.fn.RunLastSpec()
         -- vim.cmd 'Copen'
         -- vim.cmd.execute [["normal \<s-G>zb<CR>"]]
       end, { desc = 'run last spec' })
 
-      -- vim.keymap.set('n', '\\<BS>', function()
-      --   vim.cmd 'cclose'
-      -- end, { desc = 'close quick window' })
-
       vim.keymap.set('n', '\\d', function()
         vim.cmd.execute [["normal \<s-O>binding.pry\<ESC>:w\<CR>"]]
       end, { desc = 'insert binding.pry' })
+
+      -- Rename the variable under your cursor.
+      --  Most Language Servers support renaming across files, etc.
+      vim.keymap.set('n', '\\r', vim.lsp.buf.rename, { desc = '[R]e[n]ame' })
+
+      -- Fuzzy find all the symbols in your current document.
+      --  Symbols are things like variables, functions, types, etc.
+      vim.keymap.set('n', '\\\\', require('telescope.builtin').lsp_document_symbols, { desc = '[D]ocument [S]ymbols' })
+
+      -- Fuzzy find all the symbols in your current workspace.
+      --  Similar to document symbols, except searches over your entire project.
+      vim.keymap.set('n', '\\w', require('telescope.builtin').lsp_dynamic_workspace_symbols, { desc = '[W]orkspace [S]ymbols' })
+
+      vim.keymap.set('n', '\\mm', function()
+        vim.cmd 'Start specg dbmigrate'
+      end, { desc = 'run spec db:migrate' })
+
+      vim.keymap.set('n', '\\ml', function()
+        vim.cmd 'Start specg dbload'
+      end, { desc = 'run spec db:schema:load' })
     end,
   },
 
   { -- theme onedark
     'navarasu/onedark.nvim',
     config = function()
+      local colors = require 'onedark.palette'
       require('onedark').setup {
         -- Main options --
         style = 'warmer', -- Default theme style. Choose between 'dark', 'darker', 'cool', 'deep', 'warm', 'warmer' and 'light'
-        -- transparent = false, -- Show/hide background
+        -- transparent = true, -- Show/hide background
         -- term_colors = true, -- Change terminal color as per the selected theme style
         -- ending_tildes = false, -- Show the end-of-buffer tildes. By default they are hidden
         -- cmp_itemkind_reverse = false, -- reverse item kind highlights in cmp menu
@@ -490,13 +513,18 @@ require('lazy').setup({
         --
         -- -- Custom Highlights --
         -- colors = {}, -- Override default colors
-        -- highlights = {}, -- Override highlight groups
+        highlights = { -- Override highlight groups
+          Folded = {
+            fg = colors.dark.grey,
+            bg = 'none',
+          },
+        },
         --
         -- -- Plugins Config --
         -- diagnostics = {
-        --   darker = true, -- darker colors for diagnostic
-        --   undercurl = true, -- use undercurl instead of underline for diagnostics
-        --   background = true, -- use background color for virtual text
+        --   -- darker = true, -- darker colors for diagnostic
+        --   -- undercurl = true, -- use undercurl instead of underline for diagnostics
+        --   -- background = true, -- use background color for virtual text
         -- },
       }
       require('onedark').load()
@@ -631,7 +659,7 @@ require('lazy').setup({
         { '<leader>t', group = '[T]oggle' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
         { '<C-P>', group = '[P]finding files' },
-        { '\\', hidden = true },
+        { '\\m', group = 'Rails [M]igration', mode = { 'n' } },
       },
     },
   },
@@ -674,6 +702,69 @@ require('lazy').setup({
       { -- nvim-web-devicons
         'nvim-tree/nvim-web-devicons',
         enabled = vim.g.have_nerd_font,
+        config = function()
+          require('nvim-web-devicons').setup {
+            -- your personal icons can go here (to override)
+            -- you can specify color or cterm_color instead of specifying both of them
+            -- DevIcon will be appended to `name`
+            -- override = {
+            --   ruby = {
+            --     color = '#428850',
+            --     cterm_color = '65',
+            --     name = 'Ruby',
+            --   },
+            -- },
+
+            -- globally enable different highlight colors per icon (default to true)
+            -- if set to false all icons will have the default icon's color
+            color_icons = true,
+
+            -- globally enable default icons (default to false)
+            -- will get overriden by `get_icons` option
+            default = true,
+
+            -- globally enable "strict" selection of icons - icon will be looked up in
+            -- different tables, first by filename, and if not found by extension; this
+            -- prevents cases when file doesn't have any extension but still gets some icon
+            -- because its name happened to match some extension (default to false)
+            strict = true,
+
+            -- set the light or dark variant manually, instead of relying on `background`
+            -- (default to nil)
+            variant = 'dark',
+
+            -- same as `override` but specifically for overrides by filename
+            -- takes effect when `strict` is true
+            -- override_by_filename = {
+            --   ['.gitignore'] = {
+            --     icon = ''
+            --     color = '#f1502f',
+            --     name = 'Gitignore',
+            --   },
+            -- },
+
+            -- same as `override` but specifically for overrides by extension
+            -- takes effect when `strict` is true
+            -- override_by_extension = {
+            --   ['rb'] = {
+            --     color = '#CC3E44',
+            --     cterm_color = '52',
+            --     name = 'Rb',
+            --   },
+            -- },
+
+            -- same as `override` but specifically for operating system
+            -- takes effect when `strict` is true
+            -- override_by_operating_system = {
+            --   ['apple'] = {
+            --     icon = '',
+            --     color = '#A2AAAD',
+            --     cterm_color = '248',
+            --     name = 'Apple',
+            --   },
+            -- },
+          }
+        end,
       },
 
       { -- axkirillov/easypick.nvim:
@@ -830,21 +921,24 @@ require('lazy').setup({
             '--trim', -- add this value
           },
         },
-        -- pickers = {
-        --   find_files = {
-        --     mappings = {
-        --       n = {
-        --         ['cd'] = function(prompt_bufnr)
-        --           local selection = require('telescope.actions.state').get_selected_entry()
-        --           local dir = vim.fn.fnamemodify(selection.path, ':p:h')
-        --           require('telescope.actions').close(prompt_bufnr)
-        --           -- Depending on what you want put `cd`, `lcd`, `tcd`
-        --           vim.cmd(string.format('silent lcd %s', dir))
-        --         end,
-        --       },
-        --     },
-        --   },
-        -- },
+        pickers = {
+          buffers = {
+            theme = 'ivy',
+          },
+          -- find_files = {
+          --   mappings = {
+          --     n = {
+          --       ['cd'] = function(prompt_bufnr)
+          --         local selection = require('telescope.actions.state').get_selected_entry()
+          --         local dir = vim.fn.fnamemodify(selection.path, ':p:h')
+          --         require('telescope.actions').close(prompt_bufnr)
+          --         -- Depending on what you want put `cd`, `lcd`, `tcd`
+          --         vim.cmd(string.format('silent lcd %s', dir))
+          --       end,
+          --     },
+          --   },
+          -- },
+        },
         extensions = {
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
@@ -852,18 +946,36 @@ require('lazy').setup({
         },
       }
 
+      -- See `:help telescope.builtin`
       local action_state = require 'telescope.actions.state'
       local actions = require 'telescope.actions'
+      local builtin = require 'telescope.builtin'
 
       -- live_grep on file browser current directory
       -- NOTE: need ripgrep
-      local function ripgrep_current_folder(prompt_bufnr)
+      local function prompt_dir(prompt_bufnr)
         local current_picker = action_state.get_current_picker(prompt_bufnr)
         local finder = current_picker.finder
-        local dir = vim.fn.fnamemodify(finder.path, ':~:.')
+        return vim.fn.fnamemodify(finder.path, ':~:.')
+      end
+
+      local function ripgrep_current_folder(prompt_bufnr)
+        local dir = prompt_dir(prompt_bufnr)
         actions.close(prompt_bufnr)
         require('telescope.builtin').live_grep {
+          default_text = vim.fn.expand '<cword>',
           prompt_title = dir,
+          search_dirs = { dir },
+        }
+      end
+
+      local function find_files_current_folder(prompt_bufnr)
+        local dir = prompt_dir(prompt_bufnr)
+        actions.close(prompt_bufnr)
+        builtin.find_files {
+          cwd = vim.fn.getcwd(),
+          previewer = false,
+          prompt_prefix = '🗂️ > ',
           search_dirs = { dir },
         }
       end
@@ -877,9 +989,11 @@ require('lazy').setup({
             mappings = {
               ['i'] = {
                 ['<C-r>'] = ripgrep_current_folder,
+                ['<C-f>'] = find_files_current_folder,
               },
               ['n'] = {
                 ['<C-r>'] = ripgrep_current_folder,
+                ['<C-f>'] = find_files_current_folder,
               },
             },
           },
@@ -891,9 +1005,6 @@ require('lazy').setup({
       pcall(require('telescope').load_extension, 'ui-select')
       pcall(require('telescope').load_extension, 'ag')
       pcall(require('telescope').load_extension, 'file_browser')
-
-      -- See `:help telescope.builtin`
-      local builtin = require 'telescope.builtin'
 
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
@@ -934,7 +1045,7 @@ require('lazy').setup({
           search_file = query,
           prompt_title = '🔎 similar name to > ' .. query,
           prompt_prefix = '🔎 > ',
-          search_dirs = { 'spec', 'jest', 'test', 'features' },
+          search_dirs = { 'app', 'packs', 'spec', 'jest', 'test', 'features' },
         }
       end, { desc = '🔎 [P]find similar [N]ame on app folders' })
 
@@ -950,21 +1061,21 @@ require('lazy').setup({
       --   }
       -- end, { desc = '🧪 [P]find [S]pec or test files ' })
 
-      vim.keymap.set('n', '<C-P><C-P>', function()
+      vim.keymap.set('n', '<C-P><C-F>', function()
         builtin.find_files {
           cwd = vim.fn.getcwd(),
           previewer = false,
           prompt_prefix = '🗂️ > ',
-          search_dirs = { 'packs', 'app' },
+          search_dirs = { 'packs', 'app', 'src' },
         }
-      end, { desc = '🗂️ [P]find [P]files in app folder' })
+      end, { desc = '🗂️ [P]find [F]iles in app folder' })
 
-      vim.keymap.set('n', '<C-P><C-F>', function()
+      vim.keymap.set('n', '<C-P><C-P>', function()
         builtin.buffers {
           prompt_title = 'Files opened',
           prompt_prefix = '📑 > ',
         }
-      end, { desc = '📑 [P]find opened [F]iles' })
+      end, { desc = '📑 [P]find O[P]ened Files' })
 
       vim.keymap.set('n', '<C-P><C-D>', function()
         require('telescope').extensions.file_browser.file_browser {
@@ -1103,18 +1214,6 @@ require('lazy').setup({
           --  the definition of its *type*, not where it was *defined*.
           -- map('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
 
-          -- Fuzzy find all the symbols in your current document.
-          --  Symbols are things like variables, functions, types, etc.
-          map('<leader>dd', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
-
-          -- Fuzzy find all the symbols in your current workspace.
-          --  Similar to document symbols, except searches over your entire project.
-          map('<leader>dw', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
-
-          -- Rename the variable under your cursor.
-          --  Most Language Servers support renaming across files, etc.
-          map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
-
           -- Execute a code action, usually your cursor needs to be on top of an error
           -- or a suggestion from your LSP for this to activate.
           map('<leader>tc', vim.lsp.buf.code_action, '[T]oggle [C]ode Action', { 'n', 'x' })
@@ -1191,28 +1290,6 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        ruby_lsp = {
-          mason = false,
-          -- cmd = { '/Users/qen/.rvm/gems/ruby-3.1.0@global/wrappers/ruby-lsp' },
-          -- cmd_env = { BUNDLE_GEMFILE = '/Users/qen/Projects/ruby-lsp/Gemfile' },
-          -- cmd = { 'ruby-lsp' }, -- works on wecasa project
-          -- cmd = { 'bundle', 'exec', '--gemfile', '/Users/qen/Projects/ruby-lsp/Gemfile', 'ruby-lsp' },
-          -- cmd_env = { BUNDLE_GEMFILE = '/Users/qen/Projects/ruby-lsp/Gemfile' },
-          --
-          cmd = { 'bundle', 'exec', 'ruby-lsp' }, -- works on wecasa project
-          -- cmd = { '/Users/qen/.rvm/gems/ruby-3.1.0@global/wrappers/ruby-lsp' }, -- works on talkpush
-          filetypes = { 'ruby' },
-          root_dir = function()
-            return vim.loop.cwd()
-          end,
-          -- init_options = {
-          --   formatter = 'none',
-          --   enabledFeatures = {
-          --     diagnostics = false,
-          --     codeActions = false,
-          --   },
-          -- },
-        },
         -- clangd = {},
         -- gopls = {},
         -- pyright = {},
@@ -1240,6 +1317,25 @@ require('lazy').setup({
             },
           },
         },
+      }
+
+      servers['ruby_lsp'] = {
+        -- bundle install --gemfile=~/.ruby-lsp/Gemfile
+        -- mason = false,
+        enabled = vim.g.run_ruby_lsp,
+        cmd_env = { BUNDLE_GEMFILE = '~/.ruby-lsp/Gemfile' },
+        cmd = { 'bundle', 'exec', 'ruby-lsp' },
+        filetypes = { 'ruby' },
+        root_dir = function()
+          return vim.loop.cwd()
+        end,
+        -- init_options = {
+        --   formatter = 'none',
+        --   enabledFeatures = {
+        --     diagnostics = false,
+        --     codeActions = false,
+        --   },
+        -- },
       }
 
       -- Ensure the servers and tools above are installed
@@ -1477,7 +1573,7 @@ require('lazy').setup({
       -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
       -- - sd'   - [S]urround [D]elete [']quotes
       -- - sr)'  - [S]urround [R]eplace [)] [']
-      -- require('mini.surround').setup()
+      require('mini.surround').setup()
 
       require('mini.jump').setup()
       require('mini.icons').setup {

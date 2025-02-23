@@ -95,6 +95,7 @@ vim.g.have_nerd_font = true
 
 -- lua print(vim.inspect(vim.fs.find({ 'Gemfile',  'package.json' }, { upward = true })))
 vim.g.run_ruby_lsp = not vim.tbl_isempty(vim.fs.find({ 'Gemfile' }, { upward = false }))
+vim.g.run_javascript_lsp = not vim.tbl_isempty(vim.fs.find({ 'package.json' }, { upward = false }))
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -254,6 +255,12 @@ vim.keymap.set('n', '<F8>', ':let @*=expand("%:p")<CR>', { desc = 'Copy full fil
 
 vim.keymap.set('n', '<C-j>', '<C-^>', { desc = 'jump previous open file', noremap = true, silent = true })
 
+vim.api.nvim_create_autocmd('VimEnter', {
+  callback = function()
+    vim.cmd 'Easypick changed_files'
+  end,
+})
+
 -- [[ Configure and install plugins ]]
 --
 --  To check the current status of your plugins, run
@@ -409,6 +416,21 @@ require('lazy').setup({
     end,
   },
 
+  {
+    'cappyzawa/trim.nvim',
+    config = function()
+      require('trim').setup {
+        -- if you want to remove multiple blank lines
+        patterns = {
+          [[%s/\(\n\n\)\n\+/\1/]], -- replace multiple blank lines with a single line
+        },
+
+        -- highlight trailing spaces
+        highlight = true,
+      }
+    end,
+  },
+
   { -- vim-slim
     'slim-template/vim-slim',
   },
@@ -440,14 +462,14 @@ require('lazy').setup({
       -- local rspec = require 'vim-rspec'
 
       vim.keymap.set('n', '\\t', function()
-        vim.cmd.execute [[":w\<CR>"]]
+        -- vim.cmd.execute [[":w\<CR>"]]
         vim.fn.RunNearestSpec()
         -- vim.cmd 'Copen'
         -- vim.cmd.execute [["normal \<s-G>zb<CR>"]]
       end, { desc = 'run nearest spec' })
 
       vim.keymap.set('n', '\\<BS>', function()
-        vim.cmd.execute [[":w\<CR>"]]
+        -- vim.cmd.execute [[":w\<CR>"]]
         vim.fn.RunLastSpec()
         -- vim.cmd 'Copen'
         -- vim.cmd.execute [["normal \<s-G>zb<CR>"]]
@@ -797,6 +819,7 @@ require('lazy').setup({
                 name = 'changed_files',
                 command = 'git diff --name-only $(git merge-base HEAD ' .. base_branch .. ' )',
                 previewer = easypick.previewers.branch_diff { base_branch = base_branch },
+                theme = 'ivy',
               },
 
               -- list files that have conflicts with diffs in preview
@@ -922,9 +945,12 @@ require('lazy').setup({
           },
         },
         pickers = {
-          buffers = {
-            theme = 'ivy',
-          },
+          -- buffers = {
+          --   theme = 'ivy',
+          -- },
+          -- changed_files = {
+          --   theme = 'ivy',
+          -- },
           -- find_files = {
           --   mappings = {
           --     n = {
@@ -1011,9 +1037,9 @@ require('lazy').setup({
 
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
-      vim.keymap.set('n', '<leader>sg', builtin.live_grep, { desc = '[S]earch by [G]rep' })
+      vim.keymap.set('n', '<leader>sr', builtin.live_grep, { desc = '[S]earch by [R]ipGrep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
-      vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
+      vim.keymap.set('n', '<leader>sg', builtin.resume, { desc = '[S]earch A[G]ain' })
 
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
 
@@ -1338,6 +1364,23 @@ require('lazy').setup({
         -- },
       }
 
+      servers['emmet_language_server'] = {
+        -- npm install -g @olrtg/emmet-language-server
+        enabled = vim.g.run_javascript_lsp,
+        filetypes = {
+          'css',
+          'eruby',
+          'html',
+          'htmldjango',
+          'javascriptreact',
+          'less',
+          'pug',
+          'sass',
+          'scss',
+          'typescriptreact',
+          'htmlangular',
+        },
+      }
       -- Ensure the servers and tools above are installed
       --
       -- To check the current status of installed tools and/or manually install

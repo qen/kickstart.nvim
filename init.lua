@@ -257,9 +257,19 @@ vim.keymap.set('n', '<C-j>', '<C-^>', { desc = 'jump previous open file', norema
 
 vim.api.nvim_create_autocmd('VimEnter', {
   callback = function()
-    vim.cmd 'Easypick changed_files'
+    if vim.fn.argc() == 0 then
+      vim.cmd 'Easypick changed_files'
+    end
   end,
 })
+
+local function get_visual_selection()
+  local esc = vim.api.nvim_replace_termcodes('<esc>', true, false, true)
+  vim.api.nvim_feedkeys(esc, 'x', false)
+  local vstart = vim.fn.getpos "'<"
+  local vend = vim.fn.getpos "'>"
+  return table.concat(vim.fn.getregion(vstart, vend), '\n')
+end
 
 -- [[ Configure and install plugins ]]
 --
@@ -461,35 +471,35 @@ require('lazy').setup({
 
       -- local rspec = require 'vim-rspec'
 
-      vim.keymap.set('n', '\\t', function()
+      vim.keymap.set('n', '\\tt', function()
         -- vim.cmd.execute [[":w\<CR>"]]
         vim.fn.RunNearestSpec()
         -- vim.cmd 'Copen'
         -- vim.cmd.execute [["normal \<s-G>zb<CR>"]]
-      end, { desc = 'run nearest spec' })
+      end, { desc = 'run neares[T] spec' })
 
-      vim.keymap.set('n', '\\<BS>', function()
+      vim.keymap.set('n', '\\tl', function()
         -- vim.cmd.execute [[":w\<CR>"]]
         vim.fn.RunLastSpec()
         -- vim.cmd 'Copen'
         -- vim.cmd.execute [["normal \<s-G>zb<CR>"]]
-      end, { desc = 'run last spec' })
+      end, { desc = 'run [L]ast spec' })
 
       vim.keymap.set('n', '\\d', function()
         vim.cmd.execute [["normal \<s-O>binding.pry\<ESC>:w\<CR>"]]
-      end, { desc = 'insert binding.pry' })
+      end, { desc = 'Insert [D]ebug `binding.pry`' })
 
       -- Rename the variable under your cursor.
       --  Most Language Servers support renaming across files, etc.
-      vim.keymap.set('n', '\\r', vim.lsp.buf.rename, { desc = '[R]e[n]ame' })
+      vim.keymap.set('n', '\\r', vim.lsp.buf.rename, { desc = '[R]ename' })
 
       -- Fuzzy find all the symbols in your current document.
       --  Symbols are things like variables, functions, types, etc.
-      vim.keymap.set('n', '\\\\', require('telescope.builtin').lsp_document_symbols, { desc = '[D]ocument [S]ymbols' })
+      vim.keymap.set('n', '\\\\', require('telescope.builtin').lsp_document_symbols, { desc = 'Document [S]ymbols' })
 
       -- Fuzzy find all the symbols in your current workspace.
       --  Similar to document symbols, except searches over your entire project.
-      vim.keymap.set('n', '\\w', require('telescope.builtin').lsp_dynamic_workspace_symbols, { desc = '[W]orkspace [S]ymbols' })
+      vim.keymap.set('n', '\\<ENTER>', require('telescope.builtin').lsp_dynamic_workspace_symbols, { desc = 'Workspace [S]ymbols' })
 
       vim.keymap.set('n', '\\mm', function()
         vim.cmd 'Start specg dbmigrate'
@@ -682,6 +692,7 @@ require('lazy').setup({
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
         { '<C-P>', group = '[P]finding files' },
         { '\\m', group = 'Rails [M]igration', mode = { 'n' } },
+        { '\\t', group = 'Rspec [T]est', mode = { 'n' } },
       },
     },
   },
@@ -841,19 +852,6 @@ require('lazy').setup({
         'kelly-lin/telescope-ag',
         dependencies = { 'nvim-telescope/telescope.nvim' },
         config = function()
-          vim.keymap.set('v', '<leader>sw', function()
-            local function get_visual_selection()
-              local esc = vim.api.nvim_replace_termcodes('<esc>', true, false, true)
-              vim.api.nvim_feedkeys(esc, 'x', false)
-              local vstart = vim.fn.getpos "'<"
-              local vend = vim.fn.getpos "'>"
-              return table.concat(vim.fn.getregion(vstart, vend), '\n')
-            end
-
-            local query = get_visual_selection()
-            vim.cmd('Ag ' .. query)
-          end, { desc = 'search word selection' })
-
           local telescope_ag = require 'telescope-ag'
           telescope_ag.setup {
             cmd = telescope_ag.cmds.rg, -- defaults to telescope_ag.cmds.ag
@@ -989,8 +987,8 @@ require('lazy').setup({
         local dir = prompt_dir(prompt_bufnr)
         actions.close(prompt_bufnr)
         require('telescope.builtin').live_grep {
-          default_text = vim.fn.expand '<cword>',
-          prompt_title = dir,
+          prompt_prefix = '🔦 > ',
+          prompt_title = 'Live Grep in ' .. dir,
           search_dirs = { dir },
         }
       end
@@ -1002,6 +1000,7 @@ require('lazy').setup({
           cwd = vim.fn.getcwd(),
           previewer = false,
           prompt_prefix = '🗂️ > ',
+          prompt_title = 'Find Files ' .. dir,
           search_dirs = { dir },
         }
       end
@@ -1036,7 +1035,6 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
 
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
-      vim.keymap.set('n', '<leader>sw', builtin.grep_string, { desc = '[S]earch current [W]ord' })
       vim.keymap.set('n', '<leader>sr', builtin.live_grep, { desc = '[S]earch by [R]ipGrep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sg', builtin.resume, { desc = '[S]earch A[G]ain' })
@@ -1062,7 +1060,7 @@ require('lazy').setup({
         return name
       end
 
-      -- Pinding piles  of files
+      -- Pinding piles of files
       vim.keymap.set('n', '<C-P><C-N>', function()
         local query = similar_document_name()
         builtin.find_files {
@@ -1075,53 +1073,62 @@ require('lazy').setup({
         }
       end, { desc = '🔎 [P]find similar [N]ame on app folders' })
 
-      -- vim.keymap.set('n', '<C-P><C-S>', function()
-      --   local query = similar_document_name()
-      --   builtin.find_files {
-      --     cwd = vim.fn.getcwd(),
-      --     previewer = false,
-      --     prompt_title = '🧪 found for > ' .. query,
-      --     prompt_prefix = '🧪 > ',
-      --     search_file = vim.fn.fnamemodify(vim.fn.expand '%:t', ':r'),
-      --     search_dirs = { 'spec', 'jest', 'test', 'features' },
-      --   }
-      -- end, { desc = '🧪 [P]find [S]pec or test files ' })
-
-      vim.keymap.set('n', '<C-P><C-F>', function()
-        builtin.find_files {
-          cwd = vim.fn.getcwd(),
-          previewer = false,
-          prompt_prefix = '🗂️ > ',
-          search_dirs = { 'packs', 'app', 'src' },
-        }
-      end, { desc = '🗂️ [P]find [F]iles in app folder' })
-
       vim.keymap.set('n', '<C-P><C-P>', function()
         builtin.buffers {
           prompt_title = 'Files opened',
           prompt_prefix = '📑 > ',
         }
-      end, { desc = '📑 [P]find O[P]ened Files' })
+      end, { desc = '📑 Find O[P]ened Files' })
 
       vim.keymap.set('n', '<C-P><C-D>', function()
         require('telescope').extensions.file_browser.file_browser {
           path = '%:p:h',
           select_buffer = true,
         }
-      end, { desc = '📂 [P]Browse buffer [D]irectory' })
+      end, { desc = '📂 Browse buffer [D]irectory' })
 
       vim.keymap.set('n', '<C-P><C-W>', function()
-        -- builtin.find_files {
-        --   cwd = vim.fn.getcwd(),
-        --   previewer = false,
-        --   prompt_prefix = '🗃️ > ',
-        -- }
         vim.cmd 'Telescope file_browser'
-      end, { desc = '🗃️ [P]Browse [W]orking directory' })
+      end, { desc = '🗃️ Browse [W]orking directory' })
 
       vim.keymap.set('n', '<C-P><C-G>', function()
         vim.cmd 'Easypick changed_files'
-      end, { desc = '🗄️ [P]find [G]it changed files' })
+      end, { desc = '🗄️ Find [G]it changed files' })
+
+      -- NOTE: live grep normal and visual mode
+      vim.keymap.set({ 'n', 'v' }, '<C-P><C-R>', function()
+        local query = vim.fn.expand '<cword>'
+        local prompt_suffix = '<current word>'
+        if vim.api.nvim_get_mode().mode == 'v' then
+          query = get_visual_selection()
+          prompt_suffix = '<selected word>'
+        end
+
+        builtin.live_grep {
+          default_text = query,
+          prompt_prefix = '🔦 > ',
+          prompt_title = 'Live Grep in ' .. prompt_suffix,
+        }
+      end, { desc = '🔦 Search [R]ipgrep Word selection' })
+
+      -- NOTE: find files normal and visual mode
+      vim.keymap.set({ 'n', 'v' }, '<C-P><C-F>', function()
+        local query = vim.fn.expand '<cword>'
+        local prompt_suffix = '<current word>'
+        if vim.api.nvim_get_mode().mode == 'v' then
+          query = get_visual_selection()
+          prompt_suffix = '<selected word>'
+        end
+
+        builtin.find_files {
+          cwd = vim.fn.getcwd(),
+          previewer = false,
+          default_text = query,
+          prompt_prefix = '🗂️ > ',
+          prompt_title = 'Find Files ' .. prompt_suffix,
+          search_dirs = { 'packs', 'app', 'src' },
+        }
+      end, { desc = '🗂️ [P]find [F]iles in app folder' })
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader><leader>', function()

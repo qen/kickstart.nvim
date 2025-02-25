@@ -1032,12 +1032,11 @@ require('lazy').setup({
       pcall(require('telescope').load_extension, 'file_browser')
 
       vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
-      vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
+      -- vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
 
       vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
       vim.keymap.set('n', '<leader>sr', builtin.live_grep, { desc = '[S]earch by [R]ipGrep' })
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
-      vim.keymap.set('n', '<leader>sg', builtin.resume, { desc = '[S]earch A[G]ain' })
 
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
 
@@ -1095,29 +1094,36 @@ require('lazy').setup({
         vim.cmd 'Easypick changed_files'
       end, { desc = '🗄️ Find [G]it changed files' })
 
+      vim.keymap.set('n', '<C-P>`', builtin.resume, { desc = '[`]Search again' })
+
+      -- rg type-list
+      local rip_grep_file_type = {
+        javascriptreact = 'js',
+        javascript = 'js',
+      }
       -- NOTE: live grep normal and visual mode
       vim.keymap.set({ 'n', 'v' }, '<C-P><C-R>', function()
         local query = vim.fn.expand '<cword>'
-        local prompt_suffix = '<current word>'
+        local ft = vim.bo.filetype
+        local type = rip_grep_file_type[ft] or ft
+        local additional_args = { '--type=' .. type }
+
         if vim.api.nvim_get_mode().mode == 'v' then
           query = get_visual_selection()
-          prompt_suffix = '<selected word>'
         end
 
         builtin.live_grep {
           default_text = query,
-          prompt_prefix = '🔦 > ',
-          prompt_title = 'Live Grep in ' .. prompt_suffix,
+          additional_args = additional_args,
+          prompt_prefix = '[' .. type .. '] 🔦 > ',
         }
       end, { desc = '🔦 Search [R]ipgrep Word selection' })
 
       -- NOTE: find files normal and visual mode
       vim.keymap.set({ 'n', 'v' }, '<C-P><C-F>', function()
         local query = vim.fn.expand '<cword>'
-        local prompt_suffix = '<current word>'
         if vim.api.nvim_get_mode().mode == 'v' then
           query = get_visual_selection()
-          prompt_suffix = '<selected word>'
         end
 
         builtin.find_files {
@@ -1125,7 +1131,6 @@ require('lazy').setup({
           previewer = false,
           default_text = query,
           prompt_prefix = '🗂️ > ',
-          prompt_title = 'Find Files ' .. prompt_suffix,
           search_dirs = { 'packs', 'app', 'src' },
         }
       end, { desc = '🗂️ [P]find [F]iles in app folder' })

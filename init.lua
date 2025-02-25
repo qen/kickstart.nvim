@@ -1103,7 +1103,8 @@ require('lazy').setup({
       }
       -- NOTE: live grep normal and visual mode
       vim.keymap.set({ 'n', 'v' }, '<C-P><C-R>', function()
-        local query = vim.fn.expand '<cword>'
+        -- local query = vim.fn.expand '<cword>'
+        local query = ''
         local ft = vim.bo.filetype
         local type = rip_grep_file_type[ft] or ft
         local additional_args = { '--type=' .. type }
@@ -1121,7 +1122,8 @@ require('lazy').setup({
 
       -- NOTE: find files normal and visual mode
       vim.keymap.set({ 'n', 'v' }, '<C-P><C-F>', function()
-        local query = vim.fn.expand '<cword>'
+        -- local query = vim.fn.expand '<cword>'
+        local query = ''
         if vim.api.nvim_get_mode().mode == 'v' then
           query = get_visual_selection()
         end

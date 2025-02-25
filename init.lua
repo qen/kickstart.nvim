@@ -1046,6 +1046,10 @@ require('lazy').setup({
         '_service$',
         '_policy$',
         '_job$',
+        '_worker$',
+        '_input$',
+        '_type$',
+        '_fabricator$',
       }
 
       local function similar_document_name()
@@ -1096,18 +1100,32 @@ require('lazy').setup({
 
       vim.keymap.set('n', '<C-P>`', builtin.resume, { desc = '[`]Search again' })
 
-      -- rg type-list
-      local rip_grep_file_type = {
-        javascriptreact = 'js',
-        javascript = 'js',
-      }
+      -- rg --type-list
+      -- local rip_grep_file_type = {
+      --   '--type=js',
+      --   '--type=ruby',
+      --   '--type=yaml',
+      --   '--type=readme',
+      --   '--type=haml',
+      --   '--type=slim',
+      --   '--type=json',
+      --   '--type=jsonl',
+      --   '--type=less',
+      --   '--type=sass',
+      --   '--type=sh',
+      --   '--type=sql',
+      --   '--type=svg',
+      --   '--type=typescript',
+      --   '--type=vue',
+      -- }
       -- NOTE: live grep normal and visual mode
       vim.keymap.set({ 'n', 'v' }, '<C-P><C-R>', function()
         -- local query = vim.fn.expand '<cword>'
+        -- local ft = vim.bo.filetype
+        -- local type = rip_grep_file_type[ft] or ft
+        -- local additional_args = { '--type=' .. type }
+        -- local additional_args = rip_grep_file_type
         local query = ''
-        local ft = vim.bo.filetype
-        local type = rip_grep_file_type[ft] or ft
-        local additional_args = { '--type=' .. type }
 
         if vim.api.nvim_get_mode().mode == 'v' then
           query = get_visual_selection()
@@ -1115,8 +1133,7 @@ require('lazy').setup({
 
         builtin.live_grep {
           default_text = query,
-          additional_args = additional_args,
-          prompt_prefix = '[' .. type .. '] 🔦 > ',
+          prompt_prefix = '🔦 > ',
         }
       end, { desc = '🔦 Search [R]ipgrep Word selection' })
 

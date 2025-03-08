@@ -231,6 +231,12 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
   command = 'set ft=ruby',
 })
 
+-- au BufNewFile,BufRead .env* set ft=ruby
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
+  pattern = { '.env*' },
+  command = 'set ft=sh',
+})
+
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
@@ -244,8 +250,8 @@ end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
 -- new file
-vim.keymap.set('n', '<c-n><c-f>', ':e <C-R>=fnamemodify(@%, ":h")<CR>/', { desc = 'Open current buffer file' })
-vim.keymap.set('n', '<c-n><c-n>', ':e<space>', { desc = 'Open file' })
+vim.keymap.set('n', '<c-n><c-n>', ':e <C-R>=fnamemodify(@%, ":h")<CR>/', { desc = 'Open current buffer file' })
+vim.keymap.set('n', '<c-n><c-o>', ':e<space>', { desc = 'Open file' })
 
 vim.keymap.set('n', '<Tab>q', ':bd!<CR>', { desc = 'Close current open buffer' })
 
@@ -270,6 +276,16 @@ local function get_visual_selection()
   local vend = vim.fn.getpos "'>"
   return table.concat(vim.fn.getregion(vstart, vend), '\n')
 end
+
+-- vim.api.nvim_create_autocmd('CursorMovedI', {
+--   pattern = '*',
+--   callback = function()
+--     local buf = vim.api.nvim_get_current_buf()
+--     if vim.api.nvim_buf_get_option(buf, 'modified') then
+--       print 'bufmodified'
+--     end
+--   end,
+-- })
 
 -- [[ Configure and install plugins ]]
 --
@@ -717,7 +733,7 @@ require('lazy').setup({
         'nvim-telescope/telescope-fzf-native.nvim',
 
         -- `build` is used to run some command when the plugin is installed/updated.
-        -- This is only run then, not every time Neovim starts up.
+        -- This is only run then, not every time Neovim starts up.C-P
         build = 'make',
 
         -- `cond` is a condition used to determine whether this plugin should be
@@ -1657,6 +1673,7 @@ require('lazy').setup({
       }
       require('mini.git').setup()
       require('mini.diff').setup()
+      require('mini.tabline').setup()
 
       -- Simple and easy statusline.
       --  You could remove this setup call if you don't like it,

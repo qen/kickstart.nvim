@@ -370,8 +370,8 @@ require('lazy').setup({
         lazy = false,
         config = function()
           require('blame').setup {}
-          vim.api.nvim_set_keymap('n', '<leader>gh', ':BlameToggle<CR>', { desc = 'Explore commit [H]istory', noremap = true, silent = true })
-          vim.api.nvim_set_keymap('n', '<leader>tb', ':BlameToggle virtual<CR>', { desc = '[T]oggle virtual [B]lame', noremap = true, silent = true })
+          vim.api.nvim_set_keymap('n', '\\gh', ':BlameToggle<CR>', { desc = 'Explore commit [H]istory', noremap = true, silent = true })
+          vim.api.nvim_set_keymap('n', '\\gt', ':BlameToggle virtual<CR>', { desc = '[T]oggle virtual [B]lame', noremap = true, silent = true })
         end,
         opts = {
           blame_options = { '-w' },
@@ -379,7 +379,7 @@ require('lazy').setup({
       },
     },
     config = function()
-      vim.keymap.set('n', '<leader>go', function()
+      vim.keymap.set('n', '\\go', function()
         vim.cmd 'Git blame'
         vim.cmd.execute [["normal o"]]
         vim.cmd 'GB'
@@ -703,12 +703,12 @@ require('lazy').setup({
         { '<leader>r', group = '[R]ename' },
         { '<leader>s', group = '[S]earch' },
         { '<leader>w', group = '[W]orkspace' },
-        { '<leader>g', group = '[G]it blames' },
         { '<leader>t', group = '[T]oggle' },
-        { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        -- { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
         { '<C-P>', group = '[P]finding files' },
         { '\\m', group = 'Rails [M]igration', mode = { 'n' } },
         { '\\t', group = 'Rspec [T]est', mode = { 'n' } },
+        { '\\g', group = '[G]it blames', mode = { 'n' } },
       },
     },
   },

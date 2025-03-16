@@ -9,14 +9,23 @@ vim.api.nvim_create_autocmd('User', {
   callback = function(opts)
     if opts.data.saved_buffer ~= nil then
       local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(opts.data.saved_buffer), ':~:.')
-      if vim.fn.filereadable(filename) then
-        vim.notify(filename .. ' at ' .. vim.fn.strftime '%H:%M:%S', vim.log.levels.INFO, { title = 'Autosave' })
-      end
+      -- if vim.fn.filereadable(filename) then
+      --   vim.notify(filename .. ' at ' .. vim.fn.strftime '%H:%M:%S', vim.log.levels.INFO, { title = 'Autosave' })
+      -- end
+      require('fidget').notify(' Autosave at ' .. vim.fn.strftime '%H:%M:%S', vim.log.levels.INFO, { group = group, annote = filename })
     end
   end,
 })
 return {
   'okuuva/auto-save.nvim',
+  dependencies = {
+    'j-hui/fidget.nvim',
+    opts = {
+      notification = {
+        override_vim_notify = false,
+      },
+    },
+  },
   cmd = 'ASToggle', -- optional for lazy loading on command
   event = { 'InsertLeave', 'TextChanged' }, -- optional for lazy loading on trigger events
   opts = {

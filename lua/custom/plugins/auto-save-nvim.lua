@@ -9,15 +9,32 @@ vim.api.nvim_create_autocmd('User', {
   callback = function(opts)
     if opts.data.saved_buffer ~= nil then
       local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(opts.data.saved_buffer), ':~:.')
-      -- if vim.fn.filereadable(filename) then
-      --   vim.notify(filename .. ' at ' .. vim.fn.strftime '%H:%M:%S', vim.log.levels.INFO, { title = 'Autosave' })
-      -- end
       require('fidget').notify(' Autosave at ' .. vim.fn.strftime '%H:%M:%S', vim.log.levels.INFO, { group = group, annote = filename })
     end
   end,
 })
+
+-- vim.api.nvim_create_autocmd('ModeChanged', {
+--   pattern = '*:[vV]', -- When entering any Visual mode
+--   callback = function()
+--     -- local bufnr = vim.api.nvim_get_current_buf()
+--     -- require('auto-save').cancel_timer(bufnr)
+--     -- require('auto-save').cancel_timer(vim.api.nvim_get_current_buf())
+--     -- require('auto-save').off()
+--   end,
+-- })
+--
+-- vim.api.nvim_create_autocmd('ModeChanged', {
+--   pattern = '[vV]:*', -- When exiting any Visual mode
+--   callback = function()
+--     -- local bufnr = vim.api.nvim_get_current_buf()
+--     -- require('auto-save').defer_save(bufnr)
+--     -- require('auto-save').on()
+--   end,
+-- })
+
 return {
-  'okuuva/auto-save.nvim',
+  'qen/auto-save.nvim',
   dependencies = {
     'j-hui/fidget.nvim',
     opts = {
@@ -32,11 +49,11 @@ return {
     --
     -- All of these are just the defaults
     --
-    enabled = true, -- start auto-save when the plugin is loaded (i.e. when your package manager loads it)
+    enabled = false, -- start auto-save when the plugin is loaded (i.e. when your package manager loads it)
     trigger_events = { -- See :h events
       immediate_save = { 'BufLeave', 'FocusLost' }, -- vim events that trigger an immediate save
-      defer_save = { 'InsertLeave', 'TextChanged' }, -- vim events that trigger a deferred save (saves after `debounce_delay`)
-      cancel_deferfed_save = { 'InsertEnter' }, -- vim events that cancel a pending deferred save
+      defer_save = { 'InsertLeave', 'TextChanged', 'CursorMoved' }, -- vim events that trigger a deferred save (saves after `debounce_delay`)
+      cancel_deferred_save = { 'InsertEnter' }, -- vim events that cancel a pending deferred save
     },
     -- function that takes the buffer handle and determines whether to save the current buffer or not
     -- return true: if buffer is ok to be saved
@@ -47,6 +64,11 @@ return {
       if vim.fn.getbufvar(buf, '&buftype') ~= '' then
         return false
       end
+      -- -- don't save if in visual mode
+      -- local mode = vim.api.nvim_get_mode().mode
+      -- if mode == 'v' or mode == 'V' or mode == '\22' then
+      --   return false
+      -- end
       return true
     end,
     write_all_buffers = false, -- write all buffers when the current one meets `condition`
@@ -56,7 +78,7 @@ return {
     noautocmd = false,
     lockmarks = false, -- lock marks when saving, see `:h lockmarks` for more details
     -- delay after which a pending save is executed (default 1000)
-    debounce_delay = 2500,
+    debounce_delay = 3000,
     -- log debug messages to 'auto-save.log' file in neovim cache directory, set to `true` to enable
     debug = false,
   },

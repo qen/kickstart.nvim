@@ -11,6 +11,29 @@ local function get_visual_selection()
   return table.concat(vim.fn.getregion(vstart, vend), '\n')
 end
 
+local file_name_suffixes = {
+  '_controller$',
+  '_spec$',
+  '_service$',
+  '_policy$',
+  '_job$',
+  '_worker$',
+  '_input$',
+  '_type$',
+  '_fabricator$',
+}
+
+local function similar_document_name()
+  local filename = string.gsub(vim.fn.expand '%:t:r:r:r:r', '^%W', '')
+  local name = filename
+
+  for _, suffix in ipairs(file_name_suffixes) do
+    name = name:gsub(suffix, '')
+  end
+
+  return name
+end
+
 return { -- telescope: Fuzzy Finder (files, lsp, etc)
   'nvim-telescope/telescope.nvim',
   event = 'VimEnter',
@@ -339,40 +362,42 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     pcall(require('telescope').load_extension, 'ag')
     pcall(require('telescope').load_extension, 'file_browser')
 
-    vim.keymap.set('n', '<leader>sh', builtin.help_tags, { desc = '[S]earch [H]elp' })
-    -- vim.keymap.set('n', '<leader>sk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
+    vim.keymap.set('n', '<leader>sph', builtin.help_tags, { desc = '[S]earch [H]elp' })
+    vim.keymap.set('n', '<leader>spk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
 
-    vim.keymap.set('n', '<leader>ss', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
-    vim.keymap.set('n', '<leader>sr', builtin.live_grep, { desc = '[S]earch by [R]ipGrep' })
+    vim.keymap.set('n', '<leader>spt', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
+    -- vim.keymap.set('n', '<leader>sr', builtin.live_grep, { desc = '[S]earch by [R]ipGrep' })
+
+    -- Shortcut for searching your Neovim configuration files
+    vim.keymap.set('n', '<leader>spn', function()
+      builtin.find_files { cwd = vim.fn.stdpath 'config' }
+    end, { desc = '[S]earch [N]eovim files' })
+
+    -- regroupd <leader>s shortcut keys
     vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
 
-    vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
+    vim.keymap.set('n', '<leader>s`', builtin.oldfiles, { desc = '[S]earch Recent Files ("`" for repeat)' })
 
-    local file_name_suffixes = {
-      '_controller$',
-      '_spec$',
-      '_service$',
-      '_policy$',
-      '_job$',
-      '_worker$',
-      '_input$',
-      '_type$',
-      '_fabricator$',
-    }
+    vim.keymap.set('n', '<leader>sd', function()
+      require('telescope').extensions.file_browser.file_browser {
+        path = '%:p:h',
+        select_buffer = true,
+        -- theme = 'ivy',
+        prompt_path = true,
+      }
+    end, { desc = '📂 Search Browse buffer [D]irectory' })
 
-    local function similar_document_name()
-      local filename = string.gsub(vim.fn.expand '%:t:r:r:r:r', '^%W', '')
-      local name = filename
+    vim.keymap.set('n', '<leader>sw', function()
+      -- vim.cmd 'Telescope file_browser'
+      require('telescope').extensions.file_browser.file_browser {
+        -- path = '%:p:h',
+        -- select_buffer = true,
+        -- theme = 'ivy',
+        prompt_path = true,
+      }
+    end, { desc = '🗃️ Search Browse <c[w]d>irectory' })
 
-      for _, suffix in ipairs(file_name_suffixes) do
-        name = name:gsub(suffix, '')
-      end
-
-      return name
-    end
-
-    -- Pinding piles of files
-    vim.keymap.set('n', '<C-P><C-N>', function()
+    vim.keymap.set('n', '<leader>sn', function()
       local query = similar_document_name()
       builtin.find_files {
         cwd = vim.fn.getcwd(),
@@ -382,40 +407,20 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         prompt_prefix = '🔎 > ',
         search_dirs = { 'app', 'packs', 'spec', 'jest', 'test', 'features' },
       }
-    end, { desc = '🔎 [P]find similar [N]ame on app folders' })
+    end, { desc = '🔎 Search similar [N]ame on app folders' })
 
-    -- vim.keymap.set('n', '<C-P><C-P>', function()
     vim.keymap.set('n', '<Tab><Tab>', function()
       builtin.buffers {
         prompt_title = 'Files opened',
         prompt_prefix = '📑 > ',
       }
-    end, { desc = '📑 Find O[P]ened Files' })
+    end, { desc = '📑 Find Opened Files' })
 
-    vim.keymap.set('n', '<C-P><C-D>', function()
-      require('telescope').extensions.file_browser.file_browser {
-        path = '%:p:h',
-        select_buffer = true,
-        -- theme = 'ivy',
-        prompt_path = true,
-      }
-    end, { desc = '📂 Browse buffer [D]irectory' })
-
-    vim.keymap.set('n', '<C-P><C-W>', function()
-      -- vim.cmd 'Telescope file_browser'
-      require('telescope').extensions.file_browser.file_browser {
-        -- path = '%:p:h',
-        -- select_buffer = true,
-        -- theme = 'ivy',
-        prompt_path = true,
-      }
-    end, { desc = '🗃️ Browse [W]orking directory' })
-
-    vim.keymap.set('n', '<C-P><C-G>', function()
+    vim.keymap.set('n', '<leader>sc', function()
       vim.cmd 'Easypick changed_files'
-    end, { desc = '🗄️ Find [G]it changed files' })
+    end, { desc = '🗄️ Search Git [C]hanged files' })
 
-    vim.keymap.set('n', '<C-P>`', builtin.resume, { desc = '[`]Search again' })
+    vim.keymap.set('n', '<leader>s.', builtin.resume, { desc = '[.]Search again' })
 
     -- rg --type-list
     -- local rip_grep_file_type = {
@@ -436,7 +441,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     --   '--type=vue',
     -- }
     -- NOTE: live grep normal and visual mode
-    vim.keymap.set({ 'n', 'v' }, '<C-P><C-R>', function()
+    vim.keymap.set({ 'n', 'v' }, '<leader>sr', function()
       -- local query = vim.fn.expand '<cword>'
       -- local ft = vim.bo.filetype
       -- local type = rip_grep_file_type[ft] or ft
@@ -455,7 +460,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     end, { desc = '🔦 Search [R]ipgrep Word selection' })
 
     -- NOTE: find files normal and visual mode
-    vim.keymap.set({ 'n', 'v' }, '<C-P><C-F>', function()
+    vim.keymap.set({ 'n', 'v' }, '<leader>sf', function()
       -- local query = vim.fn.expand '<cword>'
       local query = ''
       if vim.api.nvim_get_mode().mode == 'v' then
@@ -470,7 +475,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         -- search_dirs = { 'packs', 'app', 'src', 'db', 'lib', 'config', 'jest', 'spec' },
         search_dirs = { 'packs', 'app', 'src', 'lib', 'jest', 'spec' },
       }
-    end, { desc = '🗂️ [P]find [F]iles in app folder' })
+    end, { desc = '🗂️ Search [F]iles in app folder' })
 
     -- Slightly advanced example of overriding default behavior and theme
     vim.keymap.set('n', '<leader><leader>', function()
@@ -486,19 +491,14 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
 
     -- It's also possible to pass additional configuration options.
     --  See `:help telescope.builtin.live_grep()` for information about particular keys
-    vim.keymap.set('n', '<leader>s/', function()
+    vim.keymap.set('n', '<leader>s<TAB>', function()
       builtin.live_grep {
         grep_open_files = true,
         prompt_title = 'Live Grep in Open Files',
       }
     end, { desc = '[S]earch [/] in Open Files' })
 
-    -- Shortcut for searching your Neovim configuration files
-    vim.keymap.set('n', '<leader>sn', function()
-      builtin.find_files { cwd = vim.fn.stdpath 'config' }
-    end, { desc = '[S]earch [N]eovim files' })
-
-    -- -- DOES NOT WORK::: Easypick startup command
+    -- WARN: DOES NOT WORK::: Easypick startup command
     -- vim.api.nvim_create_autocmd('VimEnter', {
     --   callback = function()
     --     if vim.fn.argc() == 0 then

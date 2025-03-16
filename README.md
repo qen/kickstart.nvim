@@ -29,10 +29,6 @@ installed properly, where `~/.ruby-lsp/Gemfile`
 
 ## KEYMAPS
 
-### <C-P>
-
-the picker shortcut, file browser and file search
-
 ### \ keymaps
 
 actions related to code,

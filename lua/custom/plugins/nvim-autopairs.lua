@@ -4,7 +4,15 @@
 -- See the kickstart.nvim README for more information
 return { -- nvim-autopairs
   'windwp/nvim-autopairs',
+  event = 'InsertEnter',
+  -- Optional dependency
+  dependencies = { 'hrsh7th/nvim-cmp' },
   config = function()
+    -- If you want to automatically add `(` after selecting a function or method
+    local cmp_autopairs = require 'nvim-autopairs.completion.cmp'
+    local cmp = require 'cmp'
+    cmp.event:on('confirm_done', cmp_autopairs.on_confirm_done())
+
     local npairs = require 'nvim-autopairs'
     npairs.setup { map_cr = true }
 

@@ -317,7 +317,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       local dir = prompt_dir(prompt_bufnr)
       actions.close(prompt_bufnr)
       require('telescope.builtin').live_grep {
-        prompt_prefix = '🔦 > ',
+        prompt_prefix = '󰺮 > ',
         prompt_title = 'Live Grep in ' .. dir,
         search_dirs = { dir },
       }
@@ -329,7 +329,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       builtin.find_files {
         cwd = vim.fn.getcwd(),
         previewer = false,
-        prompt_prefix = '🗂️ ' .. dir .. '/',
+        prompt_prefix = ' ' .. dir .. '/',
         prompt_title = 'Find Files ' .. dir,
         search_dirs = { dir },
       }

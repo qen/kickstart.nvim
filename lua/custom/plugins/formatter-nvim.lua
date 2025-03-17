@@ -4,7 +4,9 @@
 -- See the kickstart.nvim README for more information
 return {
   'mhartington/formatter.nvim',
-  enabled = false,
+  -- WARN: disabled plugin
+  enabled = false, 
+  -- WARN: disabled plugin
   config = function()
     -- local util = require 'formatter.util'
 

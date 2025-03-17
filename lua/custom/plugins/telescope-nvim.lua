@@ -385,7 +385,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         -- theme = 'ivy',
         prompt_path = true,
       }
-    end, { desc = '📂 Search Browse buffer [D]irectory' })
+    end, { desc = 'Search Browse buffer [D]irectory' })
 
     vim.keymap.set('n', '<leader>sw', function()
       -- vim.cmd 'Telescope file_browser'
@@ -395,7 +395,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         -- theme = 'ivy',
         prompt_path = true,
       }
-    end, { desc = '🗃️ Search Browse <c[w]d>irectory' })
+    end, { desc = 'Search Browse <c[w]d>irectory' })
 
     vim.keymap.set('n', '<leader>sn', function()
       local query = similar_document_name()
@@ -403,22 +403,22 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         cwd = vim.fn.getcwd(),
         previewer = false,
         search_file = query,
-        prompt_title = '🔎 similar name to > ' .. query,
-        prompt_prefix = '🔎 > ',
+        prompt_title = '󰈞 similar name to > ' .. query,
+        prompt_prefix = '󰈞 > ',
         search_dirs = { 'app', 'packs', 'spec', 'jest', 'test', 'features' },
       }
-    end, { desc = '🔎 Search similar [N]ame on app folders' })
+    end, { desc = 'Search similar [N]ame on app folders' })
 
     vim.keymap.set('n', '<Tab><Tab>', function()
       builtin.buffers {
         prompt_title = 'Files opened',
-        prompt_prefix = '📑 > ',
+        prompt_prefix = ' > ',
       }
-    end, { desc = '📑 Find Opened Files' })
+    end, { desc = 'Find Opened Files' })
 
     vim.keymap.set('n', '<leader>sc', function()
       vim.cmd 'Easypick changed_files'
-    end, { desc = '🗄️ Search Git [C]hanged files' })
+    end, { desc = 'Search Git [C]hanged files' })
 
     vim.keymap.set('n', '<leader>s.', builtin.resume, { desc = '[.]Search again' })
 
@@ -455,9 +455,9 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
 
       builtin.live_grep {
         default_text = query,
-        prompt_prefix = '🔦 > ',
+        prompt_prefix = '󰺮 > ',
       }
-    end, { desc = '🔦 Search [R]ipgrep Word selection' })
+    end, { desc = 'Search [R]ipgrep Word selection' })
 
     -- NOTE: find files normal and visual mode
     vim.keymap.set({ 'n', 'v' }, '<leader>sf', function()
@@ -471,11 +471,11 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         cwd = vim.fn.getcwd(),
         previewer = false,
         default_text = query,
-        prompt_prefix = '🗂️ > ',
+        prompt_prefix = ' > ',
         -- search_dirs = { 'packs', 'app', 'src', 'db', 'lib', 'config', 'jest', 'spec' },
         search_dirs = { 'packs', 'app', 'src', 'lib', 'jest', 'spec' },
       }
-    end, { desc = '🗂️ Search [F]iles in app folder' })
+    end, { desc = 'Search [F]iles in app folder' })
 
     -- Slightly advanced example of overriding default behavior and theme
     vim.keymap.set('n', '<leader><leader>', function()

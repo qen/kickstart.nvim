@@ -5,6 +5,9 @@
 -- NOTE: LSP Plugins
 return { -- conform: Autoformat
   'stevearc/conform.nvim',
+  -- INFO: enabled plugin
+  enabled = true,
+  -- INFO: enabled plugin
   event = { 'BufWritePre' },
   cmd = { 'ConformInfo' },
   keys = {

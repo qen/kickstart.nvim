@@ -383,7 +383,6 @@ require('lazy').setup({
 
       -- Document existing key chains
       spec = {
-        -- { '<leader>c', group = '[C]ode', mode = { 'n', 'x' } },
         { '<leader>d', group = '[D]ocument symbols search' },
         { '<leader>r', group = '[R]ename' },
         { '<leader>s', group = '[S]earch', icon = { icon = '󱎰', color = 'green' } },
@@ -400,11 +399,16 @@ require('lazy').setup({
         { '<leader>sw', icon = { icon = '', color = 'yellow' } },
         { '<leader>s`', icon = { icon = '', color = 'orange' } },
         { '<leader>s<TAB>', icon = { icon = '󱔗', color = 'red' } },
-        -- { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
-        -- { '<C-P>', group = '[P]finding files' },
+        { '<leader>f', icon = { icon = '󰚔', color = 'red' } },
+        { '<TAB>h', icon = { icon = '', color = 'yellow' } },
+        { '<TAB>l', icon = { icon = '', color = 'yellow' } },
+        { '<TAB>q', icon = { icon = '󱪡', color = 'red' } },
         { '\\m', group = 'Rails [M]igration', mode = { 'n' }, icon = { icon = '󰫏', color = 'red' } },
         { '\\t', group = 'Rspec [T]est', mode = { 'n' }, icon = { icon = '', color = 'red' } },
         { '\\g', group = '[G]it blames', mode = { 'n' }, icon = { icon = '', color = 'blue' } },
+        { '\\go', icon = { icon = '', color = 'orange' } },
+        { '\\gv', icon = { icon = '', color = 'blue' } },
+        { '\\gh', icon = { icon = '', color = 'blue' } },
         { '\\d', icon = { icon = '󰙨', color = 'yellow' } },
         { '\\\\', icon = { icon = '', color = 'red' } },
         { '\\<ENTER>', icon = { icon = '', color = 'red' } },

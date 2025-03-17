@@ -12,7 +12,7 @@ return { -- vim-fugitive
       config = function()
         require('blame').setup {}
         vim.api.nvim_set_keymap('n', '\\gh', ':BlameToggle<CR>', { desc = 'Explore commit [H]istory', noremap = true, silent = true })
-        vim.api.nvim_set_keymap('n', '\\gt', ':BlameToggle virtual<CR>', { desc = '[T]oggle virtual [B]lame', noremap = true, silent = true })
+        vim.api.nvim_set_keymap('n', '\\gv', ':BlameToggle virtual<CR>', { desc = '[V]irtual Blame', noremap = true, silent = true })
       end,
       opts = {
         blame_options = { '-w' },

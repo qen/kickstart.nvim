@@ -234,6 +234,41 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     -- Telescope picker. This is really useful to discover what Telescope can
     -- do as well as how to actually do it!
 
+    -- See `:help telescope.builtin`
+    local action_state = require 'telescope.actions.state'
+    local actions = require 'telescope.actions'
+    local builtin = require 'telescope.builtin'
+
+    -- live_grep on file browser current directory
+    -- NOTE: need ripgrep
+    local function prompt_dir(prompt_bufnr)
+      local current_picker = action_state.get_current_picker(prompt_bufnr)
+      local finder = current_picker.finder
+      return vim.fn.fnamemodify(finder.path, ':~:.')
+    end
+
+    local function ripgrep_current_folder(prompt_bufnr)
+      local dir = prompt_dir(prompt_bufnr)
+      actions.close(prompt_bufnr)
+      require('telescope.builtin').live_grep {
+        prompt_prefix = '󰺮 > ',
+        prompt_title = 'Live Grep in ' .. dir,
+        search_dirs = { dir },
+      }
+    end
+
+    local function find_files_current_folder(prompt_bufnr)
+      local dir = prompt_dir(prompt_bufnr)
+      actions.close(prompt_bufnr)
+      builtin.find_files {
+        cwd = vim.fn.getcwd(),
+        previewer = false,
+        prompt_prefix = ' ' .. dir .. '/',
+        prompt_title = 'Find Files ' .. dir,
+        search_dirs = { dir },
+      }
+    end
+
     -- [[ Configure Telescope ]]
     -- See `:help telescope` and `:help telescope.setup()`
     require('telescope').setup {
@@ -279,16 +314,28 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         -- changed_files = {
         --   theme = 'ivy',
         -- },
-        -- find_files = {
+        find_files = {
+          mappings = {
+            -- n = {
+            --   ['cd'] = function(prompt_bufnr)
+            --     local selection = require('telescope.actions.state').get_selected_entry()
+            --     local dir = vim.fn.fnamemodify(selection.path, ':p:h')
+            --     require('telescope.actions').close(prompt_bufnr)
+            --     -- Depending on what you want put `cd`, `lcd`, `tcd`
+            --     vim.cmd(string.format('silent lcd %s', dir))
+            --   end,
+            -- },
+            i = {
+              -- WARN: not working, can't figure out current direction
+              -- ['<C-r>'] = ripgrep_current_folder,
+            },
+          },
+        },
+        -- WARN: not working, can't figure out current direction
+        -- live_grep = {
         --   mappings = {
-        --     n = {
-        --       ['cd'] = function(prompt_bufnr)
-        --         local selection = require('telescope.actions.state').get_selected_entry()
-        --         local dir = vim.fn.fnamemodify(selection.path, ':p:h')
-        --         require('telescope.actions').close(prompt_bufnr)
-        --         -- Depending on what you want put `cd`, `lcd`, `tcd`
-        --         vim.cmd(string.format('silent lcd %s', dir))
-        --       end,
+        --     i = {
+        --       ['<C-f>'] = find_files_current_folder,
         --     },
         --   },
         -- },
@@ -297,46 +344,6 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         ['ui-select'] = {
           require('telescope.themes').get_dropdown(),
         },
-      },
-    }
-
-    -- See `:help telescope.builtin`
-    local action_state = require 'telescope.actions.state'
-    local actions = require 'telescope.actions'
-    local builtin = require 'telescope.builtin'
-
-    -- live_grep on file browser current directory
-    -- NOTE: need ripgrep
-    local function prompt_dir(prompt_bufnr)
-      local current_picker = action_state.get_current_picker(prompt_bufnr)
-      local finder = current_picker.finder
-      return vim.fn.fnamemodify(finder.path, ':~:.')
-    end
-
-    local function ripgrep_current_folder(prompt_bufnr)
-      local dir = prompt_dir(prompt_bufnr)
-      actions.close(prompt_bufnr)
-      require('telescope.builtin').live_grep {
-        prompt_prefix = '󰺮 > ',
-        prompt_title = 'Live Grep in ' .. dir,
-        search_dirs = { dir },
-      }
-    end
-
-    local function find_files_current_folder(prompt_bufnr)
-      local dir = prompt_dir(prompt_bufnr)
-      actions.close(prompt_bufnr)
-      builtin.find_files {
-        cwd = vim.fn.getcwd(),
-        previewer = false,
-        prompt_prefix = ' ' .. dir .. '/',
-        prompt_title = 'Find Files ' .. dir,
-        search_dirs = { dir },
-      }
-    end
-
-    require('telescope').setup {
-      extensions = {
         file_browser = {
           -- theme = 'ivy',
           previewer = false,

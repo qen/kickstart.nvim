@@ -362,19 +362,16 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     pcall(require('telescope').load_extension, 'ag')
     pcall(require('telescope').load_extension, 'file_browser')
 
-    vim.keymap.set('n', '<leader>sph', builtin.help_tags, { desc = '[S]earch [H]elp' })
-    vim.keymap.set('n', '<leader>spk', builtin.keymaps, { desc = '[S]earch [K]eymaps' })
-
-    vim.keymap.set('n', '<leader>spt', builtin.builtin, { desc = '[S]earch [S]elect Telescope' })
-    -- vim.keymap.set('n', '<leader>sr', builtin.live_grep, { desc = '[S]earch by [R]ipGrep' })
-
-    -- Shortcut for searching your Neovim configuration files
-    vim.keymap.set('n', '<leader>spn', function()
+    vim.keymap.set('n', '<leader>ph', builtin.help_tags, { desc = 'Peek [H]elp' })
+    vim.keymap.set('n', '<leader>pk', builtin.keymaps, { desc = 'Peek [K]eymaps' })
+    vim.keymap.set('n', '<leader>pt', builtin.builtin, { desc = 'Peek Select [T]elescope' })
+    -- NOTE: Shortcut for searching your Neovim configuration files
+    vim.keymap.set('n', '<leader>pn', function()
       builtin.find_files { cwd = vim.fn.stdpath 'config' }
-    end, { desc = '[S]earch [N]eovim files' })
+    end, { desc = 'Peek [N]eovim files' })
 
     -- regroupd <leader>s shortcut keys
-    vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
+    vim.keymap.set('n', '<leader>pd', builtin.diagnostics, { desc = 'Peek [D]iagnostics' })
 
     vim.keymap.set('n', '<leader>s`', builtin.oldfiles, { desc = '[S]earch Recent Files ("`" for repeat)' })
 

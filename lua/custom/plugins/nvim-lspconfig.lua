@@ -65,10 +65,18 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
         -- Jump to the definition of the word under your cursor.
         --  This is where a variable was first declared, or where a function is defined, etc.
         --  To jump back, press <C-t>.
-        map('gd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+        map('gd', function()
+          require('telescope.builtin').lsp_definitions {
+            show_line = false,
+          }
+        end, '[G]oto [D]efinition')
 
         -- Find references for the word under your cursor.
-        map('gr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
+        map('gr', function()
+          require('telescope.builtin').lsp_references {
+            show_line = false,
+          }
+        end, '[G]oto [R]eferences')
 
         -- Jump to the implementation of the word under your cursor.
         --  Useful when your language has ways of declaring types without an actual implementation.

@@ -186,7 +186,7 @@ vim.opt.foldtext = 'v:lua.custom_fold_text()'
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- Diagnostic keymaps
-vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '\\q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -402,9 +402,11 @@ require('lazy').setup({
         { '<leader>sn', icon = { icon = '󰈞', color = 'blue' } },
         { '<leader>sr', icon = { icon = '󰺮', color = 'red' } },
         { '<leader>sw', icon = { icon = '', color = 'yellow' } },
-        { '<leader>s`', icon = { icon = '', color = 'orange' } },
+        { '<leader><TAB>', icon = { icon = '󱋢', color = 'orange' } },
         { '<leader>s<TAB>', icon = { icon = '󱔗', color = 'red' } },
-        { '<leader>f', icon = { icon = '󰚔', color = 'red' } },
+        { '<leader>`', icon = { icon = '', color = 'green' } },
+        { '\\f', icon = { icon = '󰚔', color = 'green' } },
+        { '\\q', icon = { icon = '', color = 'red' } },
         { '<TAB>h', icon = { icon = '', color = 'yellow' } },
         { '<TAB>l', icon = { icon = '', color = 'yellow' } },
         { '<TAB>q', icon = { icon = '󱪡', color = 'red' } },

@@ -380,7 +380,13 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     -- regroupd <leader>s shortcut keys
     vim.keymap.set('n', '<leader>pd', builtin.diagnostics, { desc = 'Peek [D]iagnostics' })
 
-    vim.keymap.set('n', '<leader>s`', builtin.oldfiles, { desc = '[S]earch Recent Files ("`" for repeat)' })
+    vim.keymap.set('n', '<leader><TAB>', function()
+      builtin.oldfiles {
+        only_cwd = true,
+        prompt_title = 'Files opened history',
+        prompt_prefix = '󱋢 > ',
+      }
+    end, { desc = 'Recent Files' })
 
     vim.keymap.set('n', '<leader>sd', function()
       require('telescope').extensions.file_browser.file_browser {
@@ -424,7 +430,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       vim.cmd 'Easypick changed_files'
     end, { desc = 'Search Git [C]hanged files' })
 
-    vim.keymap.set('n', '<leader>s.', builtin.resume, { desc = '[.]Search again' })
+    vim.keymap.set('n', '<leader>`', builtin.resume, { desc = 'Search again' })
 
     -- rg --type-list
     -- local rip_grep_file_type = {

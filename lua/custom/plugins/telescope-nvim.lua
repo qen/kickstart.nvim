@@ -380,7 +380,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     -- regroupd <leader>s shortcut keys
     vim.keymap.set('n', '<leader>pd', builtin.diagnostics, { desc = 'Peek [D]iagnostics' })
 
-    vim.keymap.set('n', '<leader><TAB>', function()
+    vim.keymap.set('n', '<TAB><TAB>', function()
       builtin.oldfiles {
         only_cwd = true,
         prompt_title = 'Files opened history',
@@ -419,7 +419,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       }
     end, { desc = 'Search similar [N]ame on app folders' })
 
-    vim.keymap.set('n', '<Tab><Tab>', function()
+    vim.keymap.set('n', '<TAB>o', function()
       builtin.buffers {
         prompt_title = 'Files opened',
         prompt_prefix = ' > ',

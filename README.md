@@ -9,6 +9,22 @@
 
 ## LSP
 
+### React Javascript
+
+```
+npm i -g @olrtg/emmet-language-server
+npm i -g @biomejs/biome
+npm i -g typescript typescript-language-server
+```
+
+or
+
+```
+:MasonInstall emmet-language-server
+```
+
+### Ruby LSP
+
 conditionally run `run_ruby_lsp` only if the `Gemfile` is found on the current directory
 
     :lua print(v.g.run_ruby_lsp)

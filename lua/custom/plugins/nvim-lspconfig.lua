@@ -240,6 +240,41 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
         'htmlangular',
       },
     }
+
+    servers['biome'] = {
+      -- npm i -g @biomejs/biome
+      enabled = vim.g.run_javascript_lsp,
+      cmd = { 'biome', 'lsp-proxy' },
+      filetypes = {
+        'astro',
+        'css',
+        'graphql',
+        'javascript',
+        'javascriptreact',
+        'json',
+        'jsonc',
+        'svelte',
+        'typescript',
+        'typescript.tsx',
+        'typescriptreact',
+        'vue',
+      },
+    }
+
+    servers['ts_ls'] = {
+      -- npm i -g typescript typescript-language-server
+      enabled = vim.g.run_javascript_lsp,
+      cmd = { 'typescript-language-server', '--stdio' },
+      filetypes = {
+        'javascript',
+        'javascriptreact',
+        'typescript',
+        'typescript.tsx',
+        'typescriptreact',
+        'vue',
+      },
+    }
+
     -- Ensure the servers and tools above are installed
     --
     -- To check the current status of installed tools and/or manually install

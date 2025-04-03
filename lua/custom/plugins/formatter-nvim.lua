@@ -5,7 +5,7 @@
 return {
   'mhartington/formatter.nvim',
   -- WARN: disabled plugin
-  enabled = false, 
+  enabled = false,
   -- WARN: disabled plugin
   config = function()
     -- local util = require 'formatter.util'

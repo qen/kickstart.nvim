@@ -2,11 +2,15 @@
 --  I promise not to create any merge conflicts in this directory :)
 --
 -- See the kickstart.nvim README for more information
-return { -- Comment
-  'numToStr/Comment.nvim',
-  config = function ()
-    require('Comment').setup()
-  end
+return {
+  'chrisgrieser/nvim-early-retirement',
+  event = 'VeryLazy',
+  config = function()
+    require('early-retirement').setup {
+      retirementAgeMins = 20,
+      minimumBufferNum = 8,
+    }
+  end,
 }
 
 -- The line beneath this is called `modeline`. See `:help modeline`

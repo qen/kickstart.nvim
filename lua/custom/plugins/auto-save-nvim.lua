@@ -34,8 +34,8 @@ vim.api.nvim_create_autocmd('User', {
 -- })
 
 return {
-  'qen/auto-save.nvim', -- NOTE: visual autosave thing fells much more better here, rather than in condition
-  -- 'okuuva/auto-save.nvim',
+  -- 'qen/auto-save.nvim', -- NOTE: I THINK visual autosave thing fells much more better here, rather than in condition
+  'okuuva/auto-save.nvim',
   dependencies = {
     'j-hui/fidget.nvim',
     opts = {
@@ -67,11 +67,11 @@ return {
       end
 
       -- INFO: we use our own qen/auto-save.nvim visual hanlding
-      -- -- don't save if in visual mode
-      -- local mode = vim.api.nvim_get_mode().mode
-      -- if mode == 'v' or mode == 'V' or mode == '\22' then
-      --   return false
-      -- end
+      -- don't save if in visual mode
+      local mode = vim.api.nvim_get_mode().mode
+      if mode == 'v' or mode == 'V' or mode == '\22' then
+        return false
+      end
       return true
     end,
     write_all_buffers = false, -- write all buffers when the current one meets `condition`

@@ -3,12 +3,13 @@
 --
 -- See the kickstart.nvim README for more information
 return {
+  -- INFO: limit number of buffer open
   'chrisgrieser/nvim-early-retirement',
   event = 'VeryLazy',
   config = function()
     require('early-retirement').setup {
       retirementAgeMins = 20,
-      minimumBufferNum = 8,
+      minimumBufferNum = 20,
     }
   end,
 }

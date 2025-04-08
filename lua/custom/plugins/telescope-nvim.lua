@@ -482,8 +482,8 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         previewer = false,
         default_text = query,
         prompt_prefix = ' > ',
-        -- search_dirs = { 'packs', 'app', 'src', 'db', 'lib', 'config', 'jest', 'spec' },
-        search_dirs = { 'packs', 'app', 'src', 'lib', 'jest', 'spec' },
+        search_dirs = { 'packs', 'app', 'src', 'db', 'lib', 'config', 'jest', 'spec' },
+        -- search_dirs = { 'packs', 'app', 'src', 'lib', 'jest', 'spec' },
       }
     end, { desc = 'Search [F]iles in app folder' })
 

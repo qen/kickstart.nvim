@@ -34,8 +34,8 @@ vim.api.nvim_create_autocmd('User', {
 -- })
 
 return {
-  -- 'qen/auto-save.nvim', -- NOTE: I THINK visual autosave thing fells much more better here, rather than in condition
-  'okuuva/auto-save.nvim',
+  'qen/auto-save.nvim', -- NOTE: I THINK visual autosave thing fells much more better here, rather than in condition
+  -- 'okuuva/auto-save.nvim',
   dependencies = {
     'j-hui/fidget.nvim',
     opts = {

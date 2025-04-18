@@ -31,32 +31,14 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
     require('mini.diff').setup()
     -- require('mini.tabline').setup()
 
-    -- Simple and easy statusline.
-    --  You could remove this setup call if you don't like it,
-    --  and try some other statusline plugin
-    local statusline = require 'mini.statusline'
     local devicons = require 'nvim-web-devicons'
-    -- set use_icons to true if you have a Nerd Font
-    statusline.setup {
-      use_icons = true,
-      set_vim_settings = true,
-    }
-
-    -- You can configure sections in the statusline by overriding their
-    -- default behavior. For example, here we set the section for
-    -- cursor location to LINE:COLUMN
-    ---@diagnostic disable-next-line: duplicate-set-field
-    statusline.section_location = function()
-      return '%2l:%-2v'
-    end
-
     local colors = require 'onedark.colors'
     vim.api.nvim_set_hl(0, 'MiniStatuslinePathSeparator', {
       fg = colors.fg,
       bold = true,
     })
 
-    local function smart_colored_path(max_pct_width, sep_icon)
+    local function smart_colored_path(max_pct_width, sep_icon, filename_color)
       local filepath = vim.fn.expand '%'
       if filepath == '' then
         return ''
@@ -64,11 +46,11 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
 
       local relpath = vim.fn.fnamemodify(filepath, ':.')
       local parts = vim.split(relpath, '/')
-      local sep = sep_icon or ''
+      local sep = sep_icon
       local sep_color = '%#MiniStatuslinePathSeparator#'
 
       -- Apply highlight to separator
-      local colored_sep = sep_color .. sep .. '%#MiniStatuslineFilename#'
+      local colored_sep = sep_color .. sep .. filename_color
 
       local win_width = vim.api.nvim_win_get_width(0)
       local full_path = table.concat(parts, colored_sep)
@@ -87,8 +69,7 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       return first .. colored_sep .. '…' .. colored_sep .. last
     end
 
-    ---@diagnostic disable-next-line: duplicate-set-field
-    statusline.section_filename = function()
+    local function status_filename(hl)
       if vim.bo.buftype == 'terminal' then
         return '%t'
       end
@@ -98,11 +79,41 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
         return ''
       end
 
-      local filename = smart_colored_path(0.8, ' ')
+      local filename = smart_colored_path(0.8, ' ', hl)
       local extension = vim.fn.expand '%:e'
       local icon, icon_hl = devicons.get_icon(filepath, extension, { default = true })
 
-      return '%#' .. icon_hl .. '#' .. icon .. ' ' .. '%#MiniStatuslineFilename#' .. filename
+      -- return '%#' .. icon_hl .. '#' .. icon .. ' ' .. '%#MiniStatuslineFilename#' .. filename
+      return '%#' .. icon_hl .. '#' .. icon .. ' ' .. hl .. filename
+    end
+
+    -- Simple and easy statusline.
+    --  You could remove this setup call if you don't like it,
+    --  and try some other statusline plugin
+    local statusline = require 'mini.statusline'
+    -- set use_icons to true if you have a Nerd Font
+    statusline.setup {
+      use_icons = true,
+      set_vim_settings = true,
+      content = {
+        inactive = function()
+          -- Return a string for the inactive window's statusline
+          return status_filename '%#MiniStatuslineInactive#'
+        end,
+      },
+    }
+
+    -- You can configure sections in the statusline by overriding their
+    -- default behavior. For example, here we set the section for
+    -- cursor location to LINE:COLUMN
+    ---@diagnostic disable-next-line: duplicate-set-field
+    statusline.section_location = function()
+      return '%2l:%-2v'
+    end
+
+    ---@diagnostic disable-next-line: duplicate-set-field
+    statusline.section_filename = function()
+      return status_filename '%#MiniStatuslineFilename#'
     end
     -- vim.api.nvim_set_hl(0, 'MiniStatuslineFilename', { fg = '#ffcc00', bg = '#303030', bold = true })
     -- ... and there is more!

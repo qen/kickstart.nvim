@@ -28,12 +28,13 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
     }
     require('mini.git').setup()
     require('mini.diff').setup()
-    require('mini.tabline').setup()
+    -- require('mini.tabline').setup()
 
     -- Simple and easy statusline.
     --  You could remove this setup call if you don't like it,
     --  and try some other statusline plugin
     local statusline = require 'mini.statusline'
+    local devicons = require 'nvim-web-devicons'
     -- set use_icons to true if you have a Nerd Font
     statusline.setup {
       use_icons = true,
@@ -48,6 +49,24 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       return '%2l:%-2v'
     end
 
+    ---@diagnostic disable-next-line: duplicate-set-field
+    statusline.section_filename = function()
+      if vim.bo.buftype == 'terminal' then
+        return '%t'
+      end
+
+      local filepath = vim.fn.expand '%'
+      if filepath == '' then
+        return ''
+      end
+
+      local filename = vim.fn.fnamemodify(filepath, ':.')
+      local extension = vim.fn.expand '%:e'
+      local icon, icon_hl = devicons.get_icon(filepath, extension, { default = true })
+
+      return '%#' .. icon_hl .. '#' .. icon .. ' ' .. '%#MiniStatuslineFilename#' .. filename
+    end
+    -- vim.api.nvim_set_hl(0, 'MiniStatuslineFilename', { fg = '#ffcc00', bg = '#303030', bold = true })
     -- ... and there is more!
     --  Check out: https://github.com/echasnovski/mini.nvim
   end,

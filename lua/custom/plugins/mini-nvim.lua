@@ -2,6 +2,7 @@
 --  I promise not to create any merge conflicts in this directory :)
 --
 -- See the kickstart.nvim README for more information
+
 return { -- mini-nvim: Collection of various small independent plugins/modules
   'echasnovski/mini.nvim',
   config = function()
@@ -49,6 +50,43 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       return '%2l:%-2v'
     end
 
+    local colors = require 'onedark.colors'
+    vim.api.nvim_set_hl(0, 'MiniStatuslinePathSeparator', {
+      fg = colors.fg,
+      bold = true,
+    })
+
+    local function smart_colored_path(max_pct_width, sep_icon)
+      local filepath = vim.fn.expand '%'
+      if filepath == '' then
+        return ''
+      end
+
+      local relpath = vim.fn.fnamemodify(filepath, ':.')
+      local parts = vim.split(relpath, '/')
+      local sep = sep_icon or ''
+      local sep_color = '%#MiniStatuslinePathSeparator#'
+
+      -- Apply highlight to separator
+      local colored_sep = sep_color .. sep .. '%#MiniStatuslineFilename#'
+
+      local win_width = vim.api.nvim_win_get_width(0)
+      local full_path = table.concat(parts, colored_sep)
+      local max_len = math.floor(win_width * (max_pct_width or 0.4))
+
+      if #full_path <= max_len then
+        return full_path
+      end
+
+      if #parts <= 2 then
+        return full_path
+      end
+
+      local first = parts[1]
+      local last = parts[#parts]
+      return first .. colored_sep .. '…' .. colored_sep .. last
+    end
+
     ---@diagnostic disable-next-line: duplicate-set-field
     statusline.section_filename = function()
       if vim.bo.buftype == 'terminal' then
@@ -60,7 +98,7 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
         return ''
       end
 
-      local filename = vim.fn.fnamemodify(filepath, ':.')
+      local filename = smart_colored_path(0.8, ' ')
       local extension = vim.fn.expand '%:e'
       local icon, icon_hl = devicons.get_icon(filepath, extension, { default = true })
 

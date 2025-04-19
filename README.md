@@ -61,6 +61,13 @@ actions related to code,
 
 ---
 
+```lua
+-- NOTE: key map recorder
+vim.on_key(function(char)
+  -- Append `char` to a file or a variable
+end, vim.api.nvim_create_namespace("keylogger"))
+```
+
 # kickstart.nvim
 
 ## Introduction

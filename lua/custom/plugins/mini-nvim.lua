@@ -148,58 +148,23 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       )
     end
 
-    local function build_winbar(_is_active)
+    local function build_winbar(is_active)
       if vim.bo.buftype ~= '' then
         vim.wo.winbar = ''
         return
       end
 
-      local filename_color
-      if vim.bo.modified then
-        filename_color = 'MiniStatuslineFilenameModified'
-      else
-        filename_color = 'MiniStatuslineFilename'
+      local filename_color = 'MiniStatusFilenameInactive'
+      if is_active then
+        if vim.bo.modified then
+          filename_color = 'MiniStatuslineFilenameModified'
+        else
+          filename_color = 'MiniStatuslineFilename'
+        end
       end
+
       vim.wo.winbar = status_filename(filename_color)
     end
-
-    -- Autocommands to handle window focus
-    vim.api.nvim_create_autocmd({ 'WinEnter', 'VimEnter' }, {
-      callback = function()
-        vim.defer_fn(function()
-          local is_active = vim.api.nvim_get_current_win() == tonumber(vim.fn.win_getid())
-          build_winbar(is_active)
-        end, 200) -- wait 100ms
-      end,
-    })
-
-    vim.api.nvim_create_autocmd({ 'WinLeave', 'BufEnter', 'BufWinEnter', 'BufModifiedSet', 'TextChanged', 'BufWritePost' }, {
-      callback = function()
-        local is_active = vim.api.nvim_get_current_win() == tonumber(vim.fn.win_getid())
-        build_winbar(is_active)
-      end,
-    })
-
-    vim.api.nvim_create_autocmd('User', {
-      pattern = { 'MiniGitUpdate', 'GitIndexChanged' },
-      callback = function()
-        local is_active = vim.api.nvim_get_current_win() == tonumber(vim.fn.win_getid())
-        build_winbar(is_active)
-      end,
-    })
-
-    vim.api.nvim_create_autocmd('DiagnosticChanged', {
-      callback = function()
-        local is_active = vim.api.nvim_get_current_win() == tonumber(vim.fn.win_getid())
-        build_winbar(is_active)
-      end,
-    })
-
-    vim.api.nvim_create_autocmd('BufModifiedSet', {
-      callback = function()
-        build_winbar(vim.fn.win_getid() == vim.fn.win_getid(vim.api.nvim_get_current_win()))
-      end,
-    })
 
     -- Simple and easy statusline.
     --  You could remove this setup call if you don't like it,
@@ -211,12 +176,14 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       set_vim_settings = true,
       content = {
         inactive = function()
+          build_winbar(false)
           return status_git_branch()
 
           -- Return a string for the inactive window's statusline
           -- return status_filename '%#MiniStatusFilenameInactive#'
         end,
         active = function()
+          build_winbar(true)
           local mode, mode_hl = MiniStatusline.section_mode { trunc_width = 120 }
           local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
           local location = MiniStatusline.section_location { trunc_width = 75 }

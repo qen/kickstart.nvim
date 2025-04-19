@@ -135,7 +135,7 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
     })
 
     vim.api.nvim_create_autocmd('User', {
-      pattern = 'MiniGitUpdate',
+      pattern = { 'MiniGitUpdate', 'GitIndexChanged' },
       callback = function()
         local is_active = vim.api.nvim_get_current_win() == tonumber(vim.fn.win_getid())
         build_winbar(is_active)

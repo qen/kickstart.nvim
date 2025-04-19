@@ -59,25 +59,23 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       local parts = vim.split(relpath, '/')
       local sep = sep_icon
       local sep_color = '%#MiniStatuslinePathSeparator#'
-
-      -- Apply highlight to separator
       local colored_sep = sep_color .. sep .. filename_color
+
+      -- Apply filename_color to the first part explicitly
+      parts[1] = filename_color .. parts[1]
 
       local win_width = vim.api.nvim_win_get_width(0)
       local full_path = table.concat(parts, colored_sep)
       local max_len = math.floor(win_width * (max_pct_width or 0.4))
 
-      if #full_path <= max_len then
-        return full_path
-      end
-
-      if #parts <= 2 then
+      if #full_path <= max_len or #parts <= 2 then
         return full_path
       end
 
       local first = parts[1]
       local folder = parts[#parts - 1] or ''
       local last = parts[#parts]
+
       return first .. colored_sep .. '…' .. colored_sep .. folder .. colored_sep .. last
     end
 
@@ -183,47 +181,6 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       return '%#' .. icon_hl .. '#' .. icon .. ' ' .. hl .. filename
     end
 
-    local function get_filesize()
-      local size = math.max(vim.fn.line2byte(vim.fn.line '$' + 1) - 1, 0)
-      if size < 1024 then
-        return string.format('%dB', size)
-      elseif size < 1048576 then
-        return string.format('%.2fKiB', size / 1024)
-      else
-        return string.format('%.2fMiB', size / 1048576)
-      end
-    end
-
-    local function section_fileinfo()
-      local filetype = vim.bo.filetype
-
-      -- Return early if no filetype
-      if filetype == '' then
-        return ''
-      end
-
-      -- Get icon and its highlight group
-      local icon, hl_group = devicons.get_icon_by_filetype(filetype, { default = true })
-
-      -- Wrap icon in its highlight group if found
-      if icon and hl_group then
-        icon = string.format('%%#%s# %s', hl_group, icon)
-      else
-        icon = ''
-      end
-
-      -- If non-normal buffer, return just the filetype string
-      if vim.bo.buftype ~= '' then
-        return filetype
-      end
-
-      -- Full info
-      local encoding = vim.bo.fileencoding or vim.bo.encoding
-      local size = get_filesize()
-
-      return string.format('%s [%s] %s', size, encoding, icon)
-    end
-
     -- Simple and easy statusline.
     --  You could remove this setup call if you don't like it,
     --  and try some other statusline plugin
@@ -240,7 +197,7 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
         active = function()
           local mode, mode_hl = MiniStatusline.section_mode { trunc_width = 120 }
           -- local filename = MiniStatusline.section_filename { trunc_width = 140 }
-          -- local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
+          local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
           local location = MiniStatusline.section_location { trunc_width = 75 }
           local search = MiniStatusline.section_searchcount { trunc_width = 75 }
 
@@ -251,18 +208,17 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
             filename_color = '%#MiniStatuslineFilename#'
           end
 
-          local filename = smart_colored_path(1, ' ', filename_color)
-          local fileinfo = section_fileinfo()
+          local filename = status_filename(filename_color)
 
           -- Usage of `MiniStatusline.combine_groups()` ensures highlighting and
           -- correct padding with spaces between groups (accounts for 'missing'
           -- sections, etc.)
           return MiniStatusline.combine_groups {
             { hl = mode_hl, strings = { mode } },
-            { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
             '%<', -- Mark general truncate point
             { hl = 'MiniStatuslineFilename', strings = { filename } },
             '%=', -- End left alignment
+            { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
             { hl = mode_hl, strings = { search, location } },
           }
         end,

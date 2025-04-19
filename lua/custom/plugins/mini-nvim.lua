@@ -79,6 +79,23 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       return first .. colored_sep .. '…' .. colored_sep .. folder .. colored_sep .. last
     end
 
+    local function status_filename(hl)
+      if vim.bo.buftype == 'terminal' then
+        return '%t'
+      end
+
+      local filepath = vim.fn.expand '%'
+      if filepath == '' then
+        return ''
+      end
+
+      local filename = smart_colored_path(0.8, ' ', hl)
+      local extension = vim.fn.expand '%:e'
+      local icon, icon_hl = devicons.get_icon(filepath, extension, { default = true })
+
+      return '%#' .. icon_hl .. '#' .. icon .. ' ' .. hl .. filename
+    end
+
     local function get_git_dirty_state()
       local summary = vim.b.minigit_summary_string or ''
       if summary:find '%( M%)' or summary:find '%(A%)' or summary:find '%(D%)' then
@@ -87,27 +104,22 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       return false
     end
 
-    local function build_winbar(is_active)
-      if vim.bo.buftype ~= '' then
-        vim.wo.winbar = ''
-        return
-      end
-
+    local function status_git_branch(hl)
       local git = MiniStatusline.section_git { trunc_width = 40 } or ''
       local diff = MiniStatusline.section_diff { trunc_width = 75 } or ''
       local diagnostics = MiniStatusline.section_diagnostics { trunc_width = 75 } or ''
       local lsp = MiniStatusline.section_lsp { trunc_width = 75 } or ''
 
-      -- Determine highlight based on git + buffer status
-      local is_dirty = get_git_dirty_state()
-      local hl_group = is_dirty and 'WinbarGitDirty' or 'WinbarGitClean'
-      if not is_active then
-        hl_group = hl_group .. 'Inactive'
-      end
+      -- -- Determine highlight based on git + buffer status
+      -- local is_dirty = get_git_dirty_state()
+      -- local hl_group = is_dirty and 'WinbarGitDirty' or 'WinbarGitClean'
+      -- if not is_active then
+      --   hl_group = hl_group .. 'Inactive'
+      -- end
 
-      vim.wo.winbar = string.format(
+      return string.format(
         '%%#%s#%s',
-        hl_group,
+        hl,
         table.concat {
           ' ' .. git,
           diff ~= '' and (' ' .. diff) or '',
@@ -115,6 +127,29 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
           lsp ~= '' and (' LSP:' .. lsp) or '',
         }
       )
+    end
+
+    local function build_winbar(is_active)
+      if vim.bo.buftype ~= '' then
+        vim.wo.winbar = ''
+        return
+      end
+
+      -- -- Determine highlight based on git + buffer status
+      -- local is_dirty = get_git_dirty_state()
+      -- local hl_group = is_dirty and 'WinbarGitDirty' or 'WinbarGitClean'
+      -- if not is_active then
+      --   hl_group = hl_group .. 'Inactive'
+      -- end
+      -- vim.wo.winbar = status_git_branch(hl_group)
+
+      local filename_color
+      if vim.bo.modified then
+        filename_color = '%#MiniStatuslineFilenameModified#'
+      else
+        filename_color = '%#MiniStatuslineFilename#'
+      end
+      vim.wo.winbar = status_filename(filename_color)
     end
 
     -- Autocommands to handle window focus
@@ -155,23 +190,6 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       end,
     })
 
-    local function status_filename(hl)
-      if vim.bo.buftype == 'terminal' then
-        return '%t'
-      end
-
-      local filepath = vim.fn.expand '%'
-      if filepath == '' then
-        return ''
-      end
-
-      local filename = smart_colored_path(0.8, ' ', hl)
-      local extension = vim.fn.expand '%:e'
-      local icon, icon_hl = devicons.get_icon(filepath, extension, { default = true })
-
-      return '%#' .. icon_hl .. '#' .. icon .. ' ' .. hl .. filename
-    end
-
     -- Simple and easy statusline.
     --  You could remove this setup call if you don't like it,
     --  and try some other statusline plugin
@@ -182,8 +200,12 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       set_vim_settings = true,
       content = {
         inactive = function()
+          local is_dirty = get_git_dirty_state()
+          local hl_group = is_dirty and 'WinbarGitDirty' or 'WinbarGitClean'
+          return status_git_branch(hl_group)
+
           -- Return a string for the inactive window's statusline
-          return status_filename '%#MiniStatusFilenameInactive#'
+          -- return status_filename '%#MiniStatusFilenameInactive#'
         end,
         active = function()
           local mode, mode_hl = MiniStatusline.section_mode { trunc_width = 120 }
@@ -192,14 +214,17 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
           local location = MiniStatusline.section_location { trunc_width = 75 }
           local search = MiniStatusline.section_searchcount { trunc_width = 75 }
 
-          local filename_color
-          if vim.bo.modified then
-            filename_color = '%#MiniStatuslineFilenameModified#'
-          else
-            filename_color = '%#MiniStatuslineFilename#'
-          end
+          -- local filename_color
+          -- if vim.bo.modified then
+          --   filename_color = '%#MiniStatuslineFilenameModified#'
+          -- else
+          --   filename_color = '%#MiniStatuslineFilename#'
+          -- end
+          -- local filename = status_filename(filename_color)
 
-          local filename = status_filename(filename_color)
+          -- Determine highlight based on git + buffer status
+          local is_dirty = get_git_dirty_state()
+          local hl_group = is_dirty and 'WinbarGitDirty' or 'WinbarGitClean'
 
           -- Usage of `MiniStatusline.combine_groups()` ensures highlighting and
           -- correct padding with spaces between groups (accounts for 'missing'
@@ -207,7 +232,8 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
           return MiniStatusline.combine_groups {
             { hl = mode_hl, strings = { mode } },
             '%<', -- Mark general truncate point
-            { hl = 'MiniStatuslineFilename', strings = { filename } },
+            status_git_branch(hl_group),
+            -- { hl = 'MiniStatuslineFilename', strings = { filename } },
             '%=', -- End left alignment
             { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
             { hl = mode_hl, strings = { search, location } },

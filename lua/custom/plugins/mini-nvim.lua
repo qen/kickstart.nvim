@@ -118,16 +118,7 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
     end
 
     -- Autocommands to handle window focus
-    local winbar_events = {
-      'BufEnter',
-      'BufWinEnter',
-      'WinEnter',
-      'BufModifiedSet',
-      'TextChanged',
-      'BufWritePost',
-      'VimEnter',
-    }
-    vim.api.nvim_create_autocmd(winbar_events, {
+    vim.api.nvim_create_autocmd({ 'WinEnter', 'VimEnter' }, {
       callback = function()
         vim.defer_fn(function()
           local is_active = vim.api.nvim_get_current_win() == tonumber(vim.fn.win_getid())
@@ -136,7 +127,7 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       end,
     })
 
-    vim.api.nvim_create_autocmd({ 'WinLeave' }, {
+    vim.api.nvim_create_autocmd({ 'WinLeave', 'BufEnter', 'BufWinEnter', 'BufModifiedSet', 'TextChanged', 'BufWritePost' }, {
       callback = function()
         local is_active = vim.api.nvim_get_current_win() == tonumber(vim.fn.win_getid())
         build_winbar(is_active)

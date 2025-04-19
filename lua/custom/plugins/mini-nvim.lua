@@ -41,13 +41,13 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
     -- Set filename highlight based on active/inactive
     vim.api.nvim_set_hl(0, 'MiniStatusFilenameInactive', { fg = colors.comment, bg = 'NONE', italic = true })
 
-    vim.api.nvim_set_hl(0, 'MiniStatuslineFilename', { fg = colors.green, bg = 'NONE', bold = true })
+    vim.api.nvim_set_hl(0, 'MiniStatuslineFilename', { fg = colors.yellow, bg = 'NONE', bold = true })
 
     vim.api.nvim_set_hl(0, 'MiniStatuslineFilenameModified', { fg = colors.red, bg = 'NONE', bold = true })
 
-    vim.api.nvim_set_hl(0, 'WinbarGitClean', { fg = colors.green, bg = 'NONE', bold = true })
+    vim.api.nvim_set_hl(0, 'WinbarGitClean', { fg = colors.yellow, bg = 'NONE', bold = true })
 
-    vim.api.nvim_set_hl(0, 'WinbarGitDirty', { fg = colors.orange, bg = 'NONE', bold = true })
+    vim.api.nvim_set_hl(0, 'WinbarGitDirty', { fg = colors.dark_red, bg = 'NONE', bold = true })
 
     local function smart_colored_path(max_pct_width, sep_icon, filename_color)
       local filepath = vim.fn.expand '%'
@@ -59,10 +59,10 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       local parts = vim.split(relpath, '/')
       local sep = sep_icon
       local sep_color = '%#MiniStatuslinePathSeparator#'
-      local colored_sep = sep_color .. sep .. filename_color
+      local colored_sep = sep_color .. sep .. '%#' .. filename_color .. '#'
 
       -- Apply filename_color to the first part explicitly
-      parts[1] = filename_color .. parts[1]
+      parts[1] = '%#' .. filename_color .. '#' .. parts[1]
 
       local win_width = vim.api.nvim_win_get_width(0)
       local full_path = table.concat(parts, colored_sep)
@@ -93,7 +93,7 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       local extension = vim.fn.expand '%:e'
       local icon, icon_hl = devicons.get_icon(filepath, extension, { default = true })
 
-      return '%#' .. icon_hl .. '#' .. icon .. ' ' .. hl .. filename
+      return '%#' .. icon_hl .. '#' .. icon .. ' %#' .. hl .. '#' .. filename
     end
 
     local function get_git_dirty_state()
@@ -145,9 +145,9 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
 
       local filename_color
       if vim.bo.modified then
-        filename_color = '%#MiniStatuslineFilenameModified#'
+        filename_color = 'MiniStatuslineFilenameModified'
       else
-        filename_color = '%#MiniStatuslineFilename#'
+        filename_color = 'MiniStatuslineFilename'
       end
       vim.wo.winbar = status_filename(filename_color)
     end
@@ -225,6 +225,10 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
           -- Determine highlight based on git + buffer status
           local is_dirty = get_git_dirty_state()
           local hl_group = is_dirty and 'WinbarGitDirty' or 'WinbarGitClean'
+
+          if vim.bo.modified then
+            hl_group = 'MiniStatuslineFilenameModified'
+          end
 
           -- Usage of `MiniStatusline.combine_groups()` ensures highlighting and
           -- correct padding with spaces between groups (accounts for 'missing'

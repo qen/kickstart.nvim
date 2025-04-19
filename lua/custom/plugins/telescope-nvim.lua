@@ -488,12 +488,13 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         query = get_visual_selection()
       end
 
+      local top_dir = get_top_level_dir()
       builtin.find_files {
         cwd = vim.fn.getcwd(),
         previewer = false,
         default_text = query,
-        prompt_prefix = ' > ',
-        search_dirs = get_top_level_dir(),
+        prompt_prefix = ' ' .. top_dir[1] .. '/',
+        search_dirs = top_dir,
         -- search_dirs = { 'packs', 'app', 'src', 'db', 'lib', 'config', 'jest', 'spec' },
         -- search_dirs = { 'packs', 'app', 'src', 'lib', 'jest', 'spec' },
       }

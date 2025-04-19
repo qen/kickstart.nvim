@@ -2,17 +2,17 @@
 --  I promise not to create any merge conflicts in this directory :)
 --
 -- See the kickstart.nvim README for more information
-local group = vim.api.nvim_create_augroup('autosave', {})
-vim.api.nvim_create_autocmd('User', {
-  pattern = 'AutoSaveWritePost',
-  group = group,
-  callback = function(opts)
-    if opts.data.saved_buffer ~= nil then
-      local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(opts.data.saved_buffer), ':~:.')
-      require('fidget').notify(' Autosave at ' .. vim.fn.strftime '%H:%M:%S', vim.log.levels.INFO, { group = group, annote = filename })
-    end
-  end,
-})
+-- local group = vim.api.nvim_create_augroup('autosave', {})
+-- vim.api.nvim_create_autocmd('User', {
+--   pattern = 'AutoSaveWritePost',
+--   group = group,
+--   callback = function(opts)
+--     if opts.data.saved_buffer ~= nil then
+--       local filename = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(opts.data.saved_buffer), ':~:.')
+--       require('fidget').notify(' Autosave at ' .. vim.fn.strftime '%H:%M:%S', vim.log.levels.INFO, { group = group, annote = filename })
+--     end
+--   end,
+-- })
 
 -- vim.api.nvim_create_autocmd('ModeChanged', {
 --   pattern = '*:[vV]', -- When entering any Visual mode
@@ -41,6 +41,17 @@ return {
     opts = {
       notification = {
         override_vim_notify = false,
+        window = {
+          winblend = 0, -- Lower transparency to avoid flickering
+        },
+        view = {
+          stack_upwards = false,
+        },
+      },
+      progress = {
+        poll_rate = 100,
+        suppress_on_insert = true, -- Suppress new messages while in insert mode
+        ignore_done_already = true, -- Ignore new tasks that are already complete
       },
     },
   },

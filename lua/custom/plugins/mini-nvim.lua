@@ -94,7 +94,13 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       end
 
       local hl_group = 'WinbarDevIcon'
-      local filename_color = is_active and '%#WinbarFilenameActive#' or '%#WinbarFilenameInactive#'
+
+      local filename_color = ''
+      if is_active then
+        filename_color = '%#WinbarFilenameActive#'
+      else
+        filename_color = '%#WinbarFilenameInactive#'
+      end
 
       local filename = smart_colored_path(1, ' ', filename_color)
       local extension = vim.fn.expand '%:e'
@@ -116,6 +122,12 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
     vim.api.nvim_create_autocmd({ 'WinLeave' }, {
       callback = function()
         set_winbar(false)
+      end,
+    })
+
+    vim.api.nvim_create_autocmd('BufModifiedSet', {
+      callback = function()
+        set_winbar(vim.fn.win_getid() == vim.fn.win_getid(vim.api.nvim_get_current_win()))
       end,
     })
 

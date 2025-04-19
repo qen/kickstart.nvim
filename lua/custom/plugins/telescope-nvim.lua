@@ -269,6 +269,17 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       }
     end
 
+    local function get_top_level_dir()
+      local relpath = vim.fn.fnamemodify(vim.fn.expand '%', ':.')
+      local parts = vim.split(relpath, '/')
+
+      if #parts > 1 then
+        return { parts[1] }
+      else
+        return {}
+      end
+    end
+
     -- [[ Configure Telescope ]]
     -- See `:help telescope` and `:help telescope.setup()`
     require('telescope').setup {
@@ -482,7 +493,8 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         previewer = false,
         default_text = query,
         prompt_prefix = ' > ',
-        search_dirs = { 'packs', 'app', 'src', 'db', 'lib', 'config', 'jest', 'spec' },
+        search_dirs = get_top_level_dir(),
+        -- search_dirs = { 'packs', 'app', 'src', 'db', 'lib', 'config', 'jest', 'spec' },
         -- search_dirs = { 'packs', 'app', 'src', 'lib', 'jest', 'spec' },
       }
     end, { desc = 'Search [F]iles in app folder' })

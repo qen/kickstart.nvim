@@ -41,11 +41,11 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
     -- Set filename highlight based on active/inactive
     vim.api.nvim_set_hl(0, 'MiniStatusFilenameInactive', { fg = colors.comment, bg = 'NONE', italic = true })
 
-    vim.api.nvim_set_hl(0, 'MiniStatuslineFilename', { fg = colors.yellow, bg = 'NONE', bold = true })
+    vim.api.nvim_set_hl(0, 'MiniStatuslineFilename', { fg = colors.green, bg = 'NONE', bold = true })
 
     vim.api.nvim_set_hl(0, 'MiniStatuslineFilenameModified', { fg = colors.red, bg = 'NONE', bold = true })
 
-    vim.api.nvim_set_hl(0, 'WinbarGitClean', { fg = colors.white, bg = 'NONE', bold = true })
+    vim.api.nvim_set_hl(0, 'WinbarGitClean', { fg = colors.green, bg = 'NONE', bold = true })
 
     vim.api.nvim_set_hl(0, 'WinbarGitDirty', { fg = colors.orange, bg = 'NONE', bold = true })
 

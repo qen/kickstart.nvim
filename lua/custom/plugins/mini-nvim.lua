@@ -45,9 +45,11 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
 
     vim.api.nvim_set_hl(0, 'MiniStatuslineFilenameModified', { fg = colors.red, bg = 'NONE', bold = true })
 
-    vim.api.nvim_set_hl(0, 'WinbarGitClean', { fg = colors.yellow, bg = 'NONE', bold = true })
+    vim.api.nvim_set_hl(0, 'MiniStatuslineGitBranch', { fg = colors.white, bg = 'NONE', bold = true })
 
-    vim.api.nvim_set_hl(0, 'WinbarGitDirty', { fg = colors.dark_red, bg = 'NONE', bold = true })
+    vim.api.nvim_set_hl(0, 'GitClean', { fg = colors.green, bg = 'NONE', bold = true })
+
+    vim.api.nvim_set_hl(0, 'GitDirty', { fg = colors.red, bg = 'NONE', bold = true })
 
     local function smart_colored_path(max_pct_width, sep_icon, filename_color)
       local filepath = vim.fn.expand '%'
@@ -104,44 +106,53 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       return false
     end
 
-    local function status_git_branch(hl)
-      local git = MiniStatusline.section_git { trunc_width = 40 } or ''
-      local diff = MiniStatusline.section_diff { trunc_width = 75 } or ''
-      local diagnostics = MiniStatusline.section_diagnostics { trunc_width = 75 } or ''
-      local lsp = MiniStatusline.section_lsp { trunc_width = 75 } or ''
+    local function status_git_file_status()
+      local diff = MiniStatusline.section_diff { trunc_width = 40 } or ''
+      local diagnostics = MiniStatusline.section_diagnostics { trunc_width = 40 } or ''
+      local lsp = MiniStatusline.section_lsp { trunc_width = 40 } or ''
 
-      -- -- Determine highlight based on git + buffer status
-      -- local is_dirty = get_git_dirty_state()
-      -- local hl_group = is_dirty and 'WinbarGitDirty' or 'WinbarGitClean'
-      -- if not is_active then
-      --   hl_group = hl_group .. 'Inactive'
-      -- end
+      local hl_diff
+      if vim.bo.modified then
+        hl_diff = 'MiniStatuslineFilenameModified'
+      else
+        hl_diff = 'MiniStatuslineFilename'
+      end
 
       return string.format(
-        '%%#%s#%s',
-        hl,
-        table.concat {
-          ' ' .. git,
-          diff ~= '' and (' ' .. diff) or '',
-          diagnostics ~= '' and (' ' .. diagnostics) or '',
-          lsp ~= '' and (' LSP:' .. lsp) or '',
-        }
+        '%s%s%s',
+        diff ~= '' and string.format('%%#%s# %s', hl_diff, diff) or '',
+        diagnostics ~= '' and (' ' .. diagnostics) or '',
+        lsp ~= '' and (' LSP:' .. lsp) or ''
       )
     end
 
-    local function build_winbar(is_active)
+    local function status_git_branch()
+      local full_git = MiniStatusline.section_git { trunc_width = 70 } or ''
+
+      local icon = ''
+      local icon_hl = 'GitClean'
+      local is_dirty = get_git_dirty_state()
+      if is_dirty then
+        icon = '✗'
+        icon_hl = 'GitDirty'
+      end
+
+      local git_branch, git_status = string.match(full_git, '^(.-)%s*(%b())$')
+      git_branch = git_branch or full_git
+      git_status = git_status or ''
+
+      return string.format(
+        '%s%s ',
+        string.format('%%#%s# %s', 'MiniStatuslineGitBranch', git_branch),
+        icon ~= '' and string.format('%%#%s# %s', icon_hl, icon) or ''
+      )
+    end
+
+    local function build_winbar(_is_active)
       if vim.bo.buftype ~= '' then
         vim.wo.winbar = ''
         return
       end
-
-      -- -- Determine highlight based on git + buffer status
-      -- local is_dirty = get_git_dirty_state()
-      -- local hl_group = is_dirty and 'WinbarGitDirty' or 'WinbarGitClean'
-      -- if not is_active then
-      --   hl_group = hl_group .. 'Inactive'
-      -- end
-      -- vim.wo.winbar = status_git_branch(hl_group)
 
       local filename_color
       if vim.bo.modified then
@@ -200,35 +211,16 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       set_vim_settings = true,
       content = {
         inactive = function()
-          local is_dirty = get_git_dirty_state()
-          local hl_group = is_dirty and 'WinbarGitDirty' or 'WinbarGitClean'
-          return status_git_branch(hl_group)
+          return status_git_branch()
 
           -- Return a string for the inactive window's statusline
           -- return status_filename '%#MiniStatusFilenameInactive#'
         end,
         active = function()
           local mode, mode_hl = MiniStatusline.section_mode { trunc_width = 120 }
-          -- local filename = MiniStatusline.section_filename { trunc_width = 140 }
           local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
           local location = MiniStatusline.section_location { trunc_width = 75 }
           local search = MiniStatusline.section_searchcount { trunc_width = 75 }
-
-          -- local filename_color
-          -- if vim.bo.modified then
-          --   filename_color = '%#MiniStatuslineFilenameModified#'
-          -- else
-          --   filename_color = '%#MiniStatuslineFilename#'
-          -- end
-          -- local filename = status_filename(filename_color)
-
-          -- Determine highlight based on git + buffer status
-          local is_dirty = get_git_dirty_state()
-          local hl_group = is_dirty and 'WinbarGitDirty' or 'WinbarGitClean'
-
-          if vim.bo.modified then
-            hl_group = 'MiniStatuslineFilenameModified'
-          end
 
           -- Usage of `MiniStatusline.combine_groups()` ensures highlighting and
           -- correct padding with spaces between groups (accounts for 'missing'
@@ -236,9 +228,10 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
           return MiniStatusline.combine_groups {
             { hl = mode_hl, strings = { mode } },
             '%<', -- Mark general truncate point
-            status_git_branch(hl_group),
+            status_git_file_status(),
             -- { hl = 'MiniStatuslineFilename', strings = { filename } },
             '%=', -- End left alignment
+            status_git_branch(),
             { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
             { hl = mode_hl, strings = { search, location } },
           }

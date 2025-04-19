@@ -39,17 +39,15 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
     })
 
     -- Set filename highlight based on active/inactive
-    vim.api.nvim_set_hl(0, 'WinbarFilenameActive', { fg = colors.yellow, bg = 'NONE', bold = true })
-    vim.api.nvim_set_hl(0, 'WinbarFilenameInactive', { fg = colors.comment, bg = 'NONE', italic = true })
+    vim.api.nvim_set_hl(0, 'MiniStatusFilenameInactive', { fg = colors.comment, bg = 'NONE', italic = true })
 
-    -- Regular color for devinfo
-    vim.api.nvim_set_hl(0, 'MiniStatuslineDevinfo', { fg = colors.white, bg = 'NONE' })
+    vim.api.nvim_set_hl(0, 'MiniStatuslineFilename', { fg = colors.yellow, bg = 'NONE', bold = true })
 
-    -- Modified color for devinfo
-    vim.api.nvim_set_hl(0, 'MiniStatuslineDevinfoModified', { fg = colors.red, bg = 'NONE', bold = true })
+    vim.api.nvim_set_hl(0, 'MiniStatuslineFilenameModified', { fg = colors.red, bg = 'NONE', bold = true })
 
-    -- Modified color for devinfo in git
-    vim.api.nvim_set_hl(0, 'MiniStatuslineDevinfoModifiedGit', { fg = colors.orange, bg = 'NONE', bold = true })
+    vim.api.nvim_set_hl(0, 'WinbarGitClean', { fg = colors.white, bg = 'NONE', bold = true })
+
+    vim.api.nvim_set_hl(0, 'WinbarGitDirty', { fg = colors.orange, bg = 'NONE', bold = true })
 
     local function smart_colored_path(max_pct_width, sep_icon, filename_color)
       local filepath = vim.fn.expand '%'
@@ -83,51 +81,88 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       return first .. colored_sep .. '…' .. colored_sep .. folder .. colored_sep .. last
     end
 
-    -- Helper function to update winbar based on window activity
-    local function set_winbar(is_active)
-      local buftype = vim.bo.buftype
-      local filetype = vim.bo.filetype
+    local function get_git_dirty_state()
+      local summary = vim.b.minigit_summary_string or ''
+      if summary:find '%( M%)' or summary:find '%(A%)' or summary:find '%(D%)' then
+        return true
+      end
+      return false
+    end
 
-      if buftype ~= '' or vim.tbl_contains({ 'NvimTree', 'TelescopePrompt', 'neo-tree', 'Outline' }, filetype) then
+    local function build_winbar(is_active)
+      if vim.bo.buftype ~= '' then
         vim.wo.winbar = ''
         return
       end
 
-      local hl_group = 'WinbarDevIcon'
+      local git = MiniStatusline.section_git { trunc_width = 40 } or ''
+      local diff = MiniStatusline.section_diff { trunc_width = 75 } or ''
+      local diagnostics = MiniStatusline.section_diagnostics { trunc_width = 75 } or ''
+      local lsp = MiniStatusline.section_lsp { trunc_width = 75 } or ''
 
-      local filename_color = ''
-      if is_active then
-        filename_color = '%#WinbarFilenameActive#'
-      else
-        filename_color = '%#WinbarFilenameInactive#'
+      -- Determine highlight based on git + buffer status
+      local is_dirty = get_git_dirty_state()
+      local hl_group = is_dirty and 'WinbarGitDirty' or 'WinbarGitClean'
+      if not is_active then
+        hl_group = hl_group .. 'Inactive'
       end
 
-      local filename = smart_colored_path(1, ' ', filename_color)
-      local extension = vim.fn.expand '%:e'
-      local icon, icon_color = devicons.get_icon_color(filename, extension, { default = true })
-
-      -- Set icon color
-      vim.api.nvim_set_hl(0, hl_group, { fg = icon_color, bg = 'NONE' })
-
-      vim.wo.winbar = string.format('%%#%s#%s %s%s', hl_group, icon, filename_color, filename)
+      vim.wo.winbar = string.format(
+        '%%#%s#%s',
+        hl_group,
+        table.concat {
+          ' ' .. git,
+          diff ~= '' and (' ' .. diff) or '',
+          diagnostics ~= '' and (' ' .. diagnostics) or '',
+          lsp ~= '' and (' LSP:' .. lsp) or '',
+        }
+      )
     end
 
     -- Autocommands to handle window focus
-    vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWinEnter', 'WinEnter' }, {
+    local winbar_events = {
+      'BufEnter',
+      'BufWinEnter',
+      'WinEnter',
+      'BufModifiedSet',
+      'TextChanged',
+      'BufWritePost',
+      'VimEnter',
+    }
+    vim.api.nvim_create_autocmd(winbar_events, {
       callback = function()
-        set_winbar(true)
+        vim.defer_fn(function()
+          local is_active = vim.api.nvim_get_current_win() == tonumber(vim.fn.win_getid())
+          build_winbar(is_active)
+        end, 200) -- wait 100ms
       end,
     })
 
     vim.api.nvim_create_autocmd({ 'WinLeave' }, {
       callback = function()
-        set_winbar(false)
+        local is_active = vim.api.nvim_get_current_win() == tonumber(vim.fn.win_getid())
+        build_winbar(is_active)
+      end,
+    })
+
+    vim.api.nvim_create_autocmd('User', {
+      pattern = 'MiniGitUpdate',
+      callback = function()
+        local is_active = vim.api.nvim_get_current_win() == tonumber(vim.fn.win_getid())
+        build_winbar(is_active)
+      end,
+    })
+
+    vim.api.nvim_create_autocmd('DiagnosticChanged', {
+      callback = function()
+        local is_active = vim.api.nvim_get_current_win() == tonumber(vim.fn.win_getid())
+        build_winbar(is_active)
       end,
     })
 
     vim.api.nvim_create_autocmd('BufModifiedSet', {
       callback = function()
-        set_winbar(vim.fn.win_getid() == vim.fn.win_getid(vim.api.nvim_get_current_win()))
+        build_winbar(vim.fn.win_getid() == vim.fn.win_getid(vim.api.nvim_get_current_win()))
       end,
     })
 
@@ -145,8 +180,48 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       local extension = vim.fn.expand '%:e'
       local icon, icon_hl = devicons.get_icon(filepath, extension, { default = true })
 
-      -- return '%#' .. icon_hl .. '#' .. icon .. ' ' .. '%#MiniStatuslineFilename#' .. filename
       return '%#' .. icon_hl .. '#' .. icon .. ' ' .. hl .. filename
+    end
+
+    local function get_filesize()
+      local size = math.max(vim.fn.line2byte(vim.fn.line '$' + 1) - 1, 0)
+      if size < 1024 then
+        return string.format('%dB', size)
+      elseif size < 1048576 then
+        return string.format('%.2fKiB', size / 1024)
+      else
+        return string.format('%.2fMiB', size / 1048576)
+      end
+    end
+
+    local function section_fileinfo()
+      local filetype = vim.bo.filetype
+
+      -- Return early if no filetype
+      if filetype == '' then
+        return ''
+      end
+
+      -- Get icon and its highlight group
+      local icon, hl_group = devicons.get_icon_by_filetype(filetype, { default = true })
+
+      -- Wrap icon in its highlight group if found
+      if icon and hl_group then
+        icon = string.format('%%#%s# %s', hl_group, icon)
+      else
+        icon = ''
+      end
+
+      -- If non-normal buffer, return just the filetype string
+      if vim.bo.buftype ~= '' then
+        return filetype
+      end
+
+      -- Full info
+      local encoding = vim.bo.fileencoding or vim.bo.encoding
+      local size = get_filesize()
+
+      return string.format('%s [%s] %s', size, encoding, icon)
     end
 
     -- Simple and easy statusline.
@@ -160,35 +235,34 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       content = {
         inactive = function()
           -- Return a string for the inactive window's statusline
-          return status_filename '%#MiniStatuslineInactive#'
+          return status_filename '%#MiniStatusFilenameInactive#'
         end,
         active = function()
           local mode, mode_hl = MiniStatusline.section_mode { trunc_width = 120 }
-          local git = MiniStatusline.section_git { trunc_width = 40 }
-          local diff = MiniStatusline.section_diff { trunc_width = 75 }
-          local diagnostics = MiniStatusline.section_diagnostics { trunc_width = 75 }
-          local lsp = MiniStatusline.section_lsp { trunc_width = 75 }
-          local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
+          -- local filename = MiniStatusline.section_filename { trunc_width = 140 }
+          -- local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
           local location = MiniStatusline.section_location { trunc_width = 75 }
           local search = MiniStatusline.section_searchcount { trunc_width = 75 }
 
-          -- Pick devinfo highlight group based on modified status
-          local devinfo_hl = vim.bo.modified and 'MiniStatuslineDevinfoModified' or 'MiniStatuslineDevinfo'
-          local summary = vim.b.minigit_summary_string or vim.b.gitsigns_head
-
-          if summary and summary:find '%( M%)' and not vim.bo.modified then
-            devinfo_hl = 'MiniStatuslineDevinfoModifiedGit'
+          local filename_color
+          if vim.bo.modified then
+            filename_color = '%#MiniStatuslineFilenameModified#'
+          else
+            filename_color = '%#MiniStatuslineFilename#'
           end
+
+          local filename = smart_colored_path(1, ' ', filename_color)
+          local fileinfo = section_fileinfo()
 
           -- Usage of `MiniStatusline.combine_groups()` ensures highlighting and
           -- correct padding with spaces between groups (accounts for 'missing'
           -- sections, etc.)
           return MiniStatusline.combine_groups {
             { hl = mode_hl, strings = { mode } },
-            { hl = devinfo_hl, strings = { git, diff, diagnostics, lsp } },
-            '%<', -- Mark general truncate point
-            '%=', -- End left alignment
             { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
+            '%<', -- Mark general truncate point
+            { hl = 'MiniStatuslineFilename', strings = { filename } },
+            '%=', -- End left alignment
             { hl = mode_hl, strings = { search, location } },
           }
         end,

@@ -6,64 +6,24 @@
 return { -- mini-nvim: Collection of various small independent plugins/modules
   'echasnovski/mini.nvim',
   config = function()
-    -- Better Around/Inside textobjects
-    --
-    -- Examples:
-    --  - va)  - [V]isually select [A]round [)]paren
-    --  - yinq - [Y]ank [I]nside [N]ext [Q]uote
-    --  - ci'  - [C]hange [I]nside [']quote
-    require('mini.ai').setup { n_lines = 500 }
-
-    -- Add/delete/replace surroundings (brackets, quotes, etc.)
-    --
-    -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
-    -- - sd'   - [S]urround [D]elete [']quotes
-    -- - sr)'  - [S]urround [R]eplace [)] [']
-    require('mini.surround').setup()
-
-    require('mini.jump').setup()
-    require('mini.icons').setup {
-      -- NOTE: brew install font-hack-nerd-font
-      -- setup iterm2 Profile font
-      style = 'glyph',
-    }
-    require('mini.git').setup()
-    require('mini.diff').setup()
-    require('mini.tabline').setup {
-      -- Whether to show file icons (requires 'mini.icons')
-      show_icons = true,
-
-      -- Function which formats the tab label
-      -- By default surrounds with space and possibly prepends with icon
-      format = function(buf_id, label)
-        local suffix = vim.bo[buf_id].modified and '+ ' or ''
-        return MiniTabline.default_format(buf_id, label) .. suffix
-      end,
-
-      -- Where to show tabpage section in case of multiple vim tabpages.
-      -- One of 'left', 'right', 'none'.
-      tabpage_section = 'left',
-    }
 
     local devicons = require 'nvim-web-devicons'
     local colors = require 'onedark.colors'
-    vim.api.nvim_set_hl(0, 'MiniStatuslinePathSeparator', {
-      fg = colors.fg,
-      bold = true,
-    })
+
+    vim.api.nvim_set_hl(0, 'MiniStatuslinePathSeparator', { fg = colors.fg, bold = true, })
 
     -- Set filename highlight based on active/inactive
-    vim.api.nvim_set_hl(0, 'MiniStatusFilenameInactive', { fg = colors.comment, bg = 'NONE', italic = true })
+    vim.api.nvim_set_hl(0, 'MiniWinbarFilenameInactive', { fg = colors.comment, bg = 'NONE', italic = true })
 
-    vim.api.nvim_set_hl(0, 'MiniStatuslineFilename', { fg = colors.yellow, bg = 'NONE', bold = true })
+    vim.api.nvim_set_hl(0, 'MiniWinbarFilename', { fg = colors.yellow, bg = 'NONE', bold = true })
 
-    vim.api.nvim_set_hl(0, 'MiniStatuslineFilenameModified', { fg = colors.red, bg = 'NONE', bold = true })
+    vim.api.nvim_set_hl(0, 'MiniWinbarFilenameModified', { fg = colors.red, bg = 'NONE', bold = true })
 
     vim.api.nvim_set_hl(0, 'MiniStatuslineGitBranch', { fg = colors.white, bg = 'NONE', bold = true })
 
-    vim.api.nvim_set_hl(0, 'GitClean', { fg = colors.green, bg = 'NONE', bold = true })
+    vim.api.nvim_set_hl(0, 'MiniStatuslineGitClean', { fg = colors.green, bg = 'NONE', bold = true })
 
-    vim.api.nvim_set_hl(0, 'GitDirty', { fg = colors.red, bg = 'NONE', bold = true })
+    vim.api.nvim_set_hl(0, 'MiniStatuslineGitDirty', { fg = colors.red, bg = 'NONE', bold = true })
 
     local function smart_colored_path(max_pct_width, sep_icon, filename_color)
       local filepath = vim.fn.expand '%'
@@ -127,9 +87,9 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
 
       local hl_diff
       if vim.bo.modified then
-        hl_diff = 'MiniStatuslineFilenameModified'
+        hl_diff = 'MiniWinbarFilenameModified'
       else
-        hl_diff = 'MiniStatuslineFilename'
+        hl_diff = 'MiniWinbarFilename'
       end
 
       return string.format(
@@ -144,11 +104,11 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       local full_git = MiniStatusline.section_git { trunc_width = 70 } or ''
 
       local icon = ''
-      local icon_hl = 'GitClean'
+      local icon_hl = 'MiniStatuslineGitClean'
       local is_dirty = get_git_dirty_state()
       if is_dirty then
         icon = '✗'
-        icon_hl = 'GitDirty'
+        icon_hl = 'MiniStatuslineGitDirty'
       end
 
       local git_branch, git_status = string.match(full_git, '^(.-)%s*(%b())$')
@@ -168,17 +128,56 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
         return
       end
 
-      local filename_color = 'MiniStatusFilenameInactive'
+      local filename_color = 'MiniWinbarFilenameInactive'
       if is_active then
         if vim.bo.modified then
-          filename_color = 'MiniStatuslineFilenameModified'
+          filename_color = 'MiniWinbarFilenameModified'
         else
-          filename_color = 'MiniStatuslineFilename'
+          filename_color = 'MiniWinbarFilename'
         end
       end
 
       vim.wo.winbar = status_filename(filename_color)
     end
+
+    -- Better Around/Inside textobjects
+    --
+    -- Examples:
+    --  - va)  - [V]isually select [A]round [)]paren
+    --  - yinq - [Y]ank [I]nside [N]ext [Q]uote
+    --  - ci'  - [C]hange [I]nside [']quote
+    require('mini.ai').setup { n_lines = 500 }
+
+    -- Add/delete/replace surroundings (brackets, quotes, etc.)
+    --
+    -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
+    -- - sd'   - [S]urround [D]elete [']quotes
+    -- - sr)'  - [S]urround [R]eplace [)] [']
+    require('mini.surround').setup()
+
+    require('mini.jump').setup()
+    require('mini.icons').setup {
+      -- NOTE: brew install font-hack-nerd-font
+      -- setup iterm2 Profile font
+      style = 'glyph',
+    }
+    require('mini.git').setup()
+    require('mini.diff').setup()
+    require('mini.tabline').setup {
+      -- Whether to show file icons (requires 'mini.icons')
+      show_icons = true,
+
+      -- Function which formats the tab label
+      -- By default surrounds with space and possibly prepends with icon
+      format = function(buf_id, label)
+        local suffix = vim.bo[buf_id].modified and '+ ' or ''
+        return MiniTabline.default_format(buf_id, label) .. suffix
+      end,
+
+      -- Where to show tabpage section in case of multiple vim tabpages.
+      -- One of 'left', 'right', 'none'.
+      tabpage_section = 'left',
+    }
 
     -- Simple and easy statusline.
     --  You could remove this setup call if you don't like it,
@@ -194,7 +193,7 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
           return status_git_branch()
 
           -- Return a string for the inactive window's statusline
-          -- return status_filename '%#MiniStatusFilenameInactive#'
+          -- return status_filename 'MiniWinbarFilenameInactive'
         end,
         active = function()
           build_winbar(true)
@@ -210,7 +209,7 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
             { hl = mode_hl, strings = { mode } },
             '%<', -- Mark general truncate point
             status_git_file_status(),
-            -- { hl = 'MiniStatuslineFilename', strings = { filename } },
+            -- { hl = 'MiniWinbarFilename', strings = { filename } },
             '%=', -- End left alignment
             status_git_branch(),
             { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
@@ -228,7 +227,7 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       return '%2l:%-2v'
     end
 
-    -- vim.api.nvim_set_hl(0, 'MiniStatuslineFilename', { fg = '#ffcc00', bg = '#303030', bold = true })
+    -- vim.api.nvim_set_hl(0, 'MiniWinbarFilename', { fg = '#ffcc00', bg = '#303030', bold = true })
     -- ... and there is more!
     --  Check out: https://github.com/echasnovski/mini.nvim
   end,

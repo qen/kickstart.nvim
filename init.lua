@@ -165,7 +165,6 @@ vim.opt.foldlevel = 2
 vim.opt.foldnestmax = 10
 vim.opt.foldmethod = 'expr'
 vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
-vim.opt.foldmethod = 'expr'
 vim.opt.wrap = false
 
 function _G.custom_fold_text()

@@ -10,7 +10,7 @@ return { -- vim-fugitive
       'FabijanZulj/blame.nvim',
       lazy = false,
       config = function()
-        require('blame').setup {}
+        require('blame').setup()
         vim.api.nvim_set_keymap('n', '\\gh', ':BlameToggle<CR>', { desc = 'Explore commit [H]istory', noremap = true, silent = true })
         vim.api.nvim_set_keymap('n', '\\gv', ':BlameToggle virtual<CR>', { desc = '[V]irtual Blame', noremap = true, silent = true })
       end,
@@ -21,7 +21,7 @@ return { -- vim-fugitive
   },
   config = function()
     vim.keymap.set('n', '\\go', function()
-      vim.cmd 'Git blame'
+      vim.cmd 'G blame'
       vim.cmd.execute [["normal o"]]
       vim.cmd 'GB'
       vim.cmd.execute [["normal \<C-W>q"]]

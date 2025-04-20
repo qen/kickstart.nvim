@@ -59,6 +59,13 @@ actions related to code,
     C-F -> open telescope find files on current directory
     C-R -> live grep telescope on current directory
 
+### Additional auto save configuration with tmux
+
+> [!TIP] .tmux.conf
+> ```
+> set -g focus-events on
+> ```
+
 ---
 
 # kickstart.nvim

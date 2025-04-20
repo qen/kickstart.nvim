@@ -23,13 +23,27 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
 
     require('mini.jump').setup()
     require('mini.icons').setup {
-      -- brew install font-hack-nerd-font
+      -- NOTE: brew install font-hack-nerd-font
       -- setup iterm2 Profile font
       style = 'glyph',
     }
     require('mini.git').setup()
     require('mini.diff').setup()
-    -- require('mini.tabline').setup()
+    require('mini.tabline').setup {
+      -- Whether to show file icons (requires 'mini.icons')
+      show_icons = true,
+
+      -- Function which formats the tab label
+      -- By default surrounds with space and possibly prepends with icon
+      format = function(buf_id, label)
+        local suffix = vim.bo[buf_id].modified and '+ ' or ''
+        return MiniTabline.default_format(buf_id, label) .. suffix
+      end,
+
+      -- Where to show tabpage section in case of multiple vim tabpages.
+      -- One of 'left', 'right', 'none'.
+      tabpage_section = 'left',
+    }
 
     local devicons = require 'nvim-web-devicons'
     local colors = require 'onedark.colors'

@@ -274,9 +274,9 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       local parts = vim.split(relpath, '/')
 
       if #parts > 1 then
-        return { parts[1] }
+        return parts[1]
       else
-        return {}
+        return '.'
       end
     end
 
@@ -493,8 +493,8 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         cwd = vim.fn.getcwd(),
         previewer = false,
         default_text = query,
-        prompt_prefix = ' ' .. top_dir[1] .. '/',
-        search_dirs = top_dir,
+        prompt_prefix = ' ' .. top_dir .. '/',
+        search_dirs = { top_dir },
         -- search_dirs = { 'packs', 'app', 'src', 'db', 'lib', 'config', 'jest', 'spec' },
         -- search_dirs = { 'packs', 'app', 'src', 'lib', 'jest', 'spec' },
       }

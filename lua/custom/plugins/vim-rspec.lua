@@ -31,7 +31,7 @@ return { -- vim-rspec
     end, { desc = 'run [L]ast spec' })
 
     vim.keymap.set('n', '\\d', function()
-      vim.cmd.execute [["normal \<s-O>binding.pry\<ESC>:w\<CR>"]]
+      vim.cmd.execute [["normal \<s-O>binding.pry if $pry\<ESC>:w\<CR>"]]
     end, { desc = 'Insert [D]ebug `binding.pry`' })
 
     vim.keymap.set('n', '\\mm', function()

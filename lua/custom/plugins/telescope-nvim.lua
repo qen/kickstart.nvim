@@ -318,7 +318,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         --   'vendor/cache',
         --   'storage',
         -- },
-        file_sorter = require('telescope.sorters').fuzzy_with_index_bias,
+        file_sorter = require('telescope.sorters').get_fzy_sorter,
         vimgrep_arguments = {
           'rg',
           '--color=never',
@@ -347,6 +347,9 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
             },
           },
         },
+        old_files = {
+          file_sorter = require('telescope.sorters').fuzzy_with_index_bias
+        }
         -- WARN: not working, can't figure out current direction
         -- live_grep = {
         --   mappings = {
@@ -399,6 +402,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     vim.keymap.set('n', '<TAB><TAB>', function()
       builtin.oldfiles {
         only_cwd = true,
+        file_sorter = require('telescope.sorters').fuzzy_with_index_bias,
         prompt_title = 'Files opened history',
         prompt_prefix = '󱋢 > ',
       }

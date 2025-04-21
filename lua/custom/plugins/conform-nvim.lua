@@ -47,7 +47,28 @@ return { -- conform: Autoformat
       -- python = { "isort", "black" },
       --
       -- You can use 'stop_after_first' to run the first available formatter from the list
-      -- javascript = { "prettierd", "prettier", stop_after_first = true },
+      javascript = { 'prettierd', 'prettier', stop_after_first = true },
+      eruby = { 'prettier_html', stop_after_first = true },
+      html = { 'prettier_html', stop_after_first = true },
+      json = { 'jq' },
+      jsonc = { 'prettier_jsonc' },
+    },
+    formatters = {
+      prettier_html = {
+        command = 'prettier',
+        args = { '--stdin-filepath', '$FILENAME', '--parser', 'html' },
+        stdin = true,
+      },
+      jq = {
+        command = 'jq',
+        args = { '.' },
+        stdin = true,
+      },
+      prettier_jsonc = {
+        command = 'prettier',
+        args = { '--stdin-filepath', '$FILENAME', '--parser', 'json' },
+        stdin = true,
+      },
     },
   },
 }

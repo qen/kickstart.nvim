@@ -4,6 +4,7 @@
 
 - brew install ripgrep
 - brew install ag
+- brew install jq
 - brew install font-hack-nerd-font
   - configure iTerm2 Profile to use Nerd Font for Non-Ascii
 
@@ -15,6 +16,7 @@
 npm i -g @olrtg/emmet-language-server
 npm i -g @biomejs/biome
 npm i -g typescript typescript-language-server
+npm i -g prettier
 ```
 
 or

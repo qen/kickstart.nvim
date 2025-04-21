@@ -269,6 +269,18 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       }
     end
 
+    local function find_files_cwd(prompt_bufnr)
+      local dir = prompt_dir(prompt_bufnr)
+      actions.close(prompt_bufnr)
+      local cwd = vim.fn.getcwd()
+      require('telescope.builtin').find_files {
+        cwd = cwd,
+        previewer = false,
+        prompt_prefix = ' ' .. '/',
+        prompt_title = 'Find Files',
+      }
+    end
+
     local function get_top_level_dir()
       local relpath = vim.fn.fnamemodify(vim.fn.expand '%', ':.')
       local parts = vim.split(relpath, '/')
@@ -276,7 +288,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       if #parts > 1 then
         return parts[1]
       else
-        return '.'
+        return nil
       end
     end
 
@@ -327,18 +339,11 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         -- },
         find_files = {
           mappings = {
-            -- n = {
-            --   ['cd'] = function(prompt_bufnr)
-            --     local selection = require('telescope.actions.state').get_selected_entry()
-            --     local dir = vim.fn.fnamemodify(selection.path, ':p:h')
-            --     require('telescope.actions').close(prompt_bufnr)
-            --     -- Depending on what you want put `cd`, `lcd`, `tcd`
-            --     vim.cmd(string.format('silent lcd %s', dir))
-            --   end,
-            -- },
+            n = {
+              ['<C-g>'] = find_files_cwd
+            },
             i = {
-              -- WARN: not working, can't figure out current direction
-              -- ['<C-r>'] = ripgrep_current_folder,
+              ['<C-g>'] = find_files_cwd
             },
           },
         },
@@ -482,23 +487,22 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
 
     -- NOTE: find files normal and visual mode
     vim.keymap.set({ 'n', 'v' }, '<leader>sf', function()
-      -- local query = vim.fn.expand '<cword>'
       local query = ''
       if vim.api.nvim_get_mode().mode == 'v' then
         query = get_visual_selection()
       end
 
       local top_dir = get_top_level_dir()
+
       builtin.find_files {
         cwd = vim.fn.getcwd(),
         previewer = false,
         default_text = query,
-        prompt_prefix = ' ' .. top_dir .. '/',
-        search_dirs = { top_dir },
-        -- search_dirs = { 'packs', 'app', 'src', 'db', 'lib', 'config', 'jest', 'spec' },
-        -- search_dirs = { 'packs', 'app', 'src', 'lib', 'jest', 'spec' },
+        prompt_prefix = top_dir and ' ' .. top_dir .. '/',
+        prompt_title = top_dir and 'Find Files ' .. top_dir,
+        search_dirs = top_dir and { top_dir },
       }
-    end, { desc = 'Search [F]iles in app folder' })
+    end, { desc = 'Search [F]iles in current parent directory folder' })
 
     -- Slightly advanced example of overriding default behavior and theme
     vim.keymap.set('n', '<leader><leader>', function()

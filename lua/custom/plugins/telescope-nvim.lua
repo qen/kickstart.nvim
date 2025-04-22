@@ -399,14 +399,16 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     -- regroupd <leader>s shortcut keys
     vim.keymap.set('n', '<leader>pd', builtin.diagnostics, { desc = 'Peek [D]iagnostics' })
 
-    vim.keymap.set('n', '<TAB><TAB>', function()
+    local function show_opened_file_history()
       builtin.oldfiles {
         only_cwd = true,
         file_sorter = require('telescope.sorters').fuzzy_with_index_bias,
         prompt_title = 'Files opened history',
         prompt_prefix = '󱋢 > ',
       }
-    end, { desc = 'Recent Files' })
+    end
+
+    vim.keymap.set('n', '<TAB><TAB>', show_opened_file_history, { desc = 'Recent Files' })
 
     vim.keymap.set('n', '<leader>sd', function()
       require('telescope').extensions.file_browser.file_browser {
@@ -528,15 +530,6 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         prompt_title = 'Live Grep in Open Files',
       }
     end, { desc = '[S]earch [/] in Open Files' })
-
-    -- WARN: DOES NOT WORK::: Easypick startup command
-    -- vim.api.nvim_create_autocmd('VimEnter', {
-    --   callback = function()
-    --     if vim.fn.argc() == 0 then
-    --       vim.cmd 'Easypick changed_files'
-    --     end
-    --   end,
-    -- })
   end,
 }
 

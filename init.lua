@@ -262,6 +262,17 @@ vim.keymap.set('n', '<F8>', ':let @*=expand("%:p")<CR>', { desc = 'Copy full fil
 
 vim.keymap.set('n', '<C-j>', '<C-^>', { desc = 'jump previous open file', noremap = true, silent = true })
 
+-- Open file opened history if no argument passed
+vim.api.nvim_create_autocmd('VimEnter', {
+  callback = function()
+    if vim.fn.argc() == 0 then
+      vim.schedule(function()
+        require("telescope.builtin").oldfiles({ only_cwd = true })
+      end)
+    end
+  end,
+})
+
 -- vim.api.nvim_create_autocmd('CursorMovedI', {
 --   pattern = '*',
 --   callback = function()

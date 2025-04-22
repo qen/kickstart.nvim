@@ -69,6 +69,22 @@ return { -- conform: Autoformat
         args = { '--stdin-filepath', '$FILENAME', '--parser', 'json' },
         stdin = true,
       },
+      rubocop = {
+        command = 'bundle',
+        args = {
+          'exec',
+          'rubocop',
+          '--auto-correct',
+          '--except',
+          'List/UselessAssignment',
+          'List/UnusedMethodArgument',
+          '--stdin',
+          '$FILENAME',
+          '--format',
+          'files',
+        },
+        stdin = true,
+      },
     },
   },
 }

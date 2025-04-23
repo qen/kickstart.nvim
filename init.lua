@@ -167,6 +167,35 @@ vim.opt.foldmethod = 'expr'
 vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
 vim.opt.wrap = false
 
+-- Disable foldexpr when the buffer is modified
+vim.api.nvim_create_autocmd("TextChanged", {
+  pattern = "*",
+  callback = function()
+    if vim.bo.modified then
+      vim.opt_local.foldmethod = "manual"
+      vim.opt_local.foldexpr = "0"
+    end
+  end,
+})
+
+-- Re-enable folding on save
+vim.api.nvim_create_autocmd("BufWritePost", {
+  pattern = "*",
+  callback = function()
+    local cursor_line = vim.fn.line('.')
+
+    -- Restore foldmethod and foldexpr
+    vim.opt_local.foldmethod = "expr"
+    vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+
+    -- Force re-evaluation of folds
+    vim.cmd("normal! zx")
+
+    -- Open fold at cursor line (if it was closed)
+    vim.cmd(cursor_line .. "foldopen!")
+  end,
+})
+
 function _G.custom_fold_text()
   local line = vim.fn.getline(vim.v.foldstart)
 

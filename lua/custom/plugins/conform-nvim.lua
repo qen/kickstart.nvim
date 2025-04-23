@@ -56,7 +56,15 @@ return { -- conform: Autoformat
     formatters = {
       prettier_html = {
         command = 'prettier',
-        args = { '--stdin-filepath', '$FILENAME', '--parser', 'html' },
+        args = {
+          '--stdin-filepath', '$FILENAME',
+          '--parser', 'html',
+          '--html-whitespace-sensitivity', 'ignore',
+          '--tab-width', '2',
+          '--trailing-comma', 'es5',
+          '--bracket-same-line', 'false',
+          '--single-attribute-per-line', 'true'
+        },
         stdin = true,
       },
       jq = {
@@ -69,6 +77,20 @@ return { -- conform: Autoformat
         args = { '--stdin-filepath', '$FILENAME', '--parser', 'json' },
         stdin = true,
       },
+      -- WARN: issue for globally installed prettier
+      -- npm i -g prettier @prettier/plugin-ruby
+      -- prettier_erb = {
+      --   command = 'prettier',
+      --   args = {
+      --     '--stdin-filepath', '$FILENAME',
+      --     '--html-whitespace-sensitivity', 'ignore',
+      --     '--tab-width', '2',
+      --     '--trailing-comma', 'es5',
+      --     '--bracket-same-line', 'false',
+      --     '--single-attribute-per-line', 'true'
+      --   },
+      --   stdin = true,
+      -- },
       rubocop = {
         command = 'bundle',
         args = {

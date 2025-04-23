@@ -16,7 +16,7 @@
 npm i -g @olrtg/emmet-language-server
 npm i -g @biomejs/biome
 npm i -g typescript typescript-language-server
-npm i -g prettier
+npm i -g prettier @prettier/plugin-ruby
 ```
 
 or

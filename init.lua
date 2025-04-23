@@ -438,6 +438,7 @@ require('lazy').setup({
         { '<leader>sc', icon = { icon = '', color = 'blue' } },
         { '<leader>sd', icon = { icon = '󰝰', color = 'yellow' } },
         { '<leader>sf', icon = { icon = '', color = 'orange' } },
+        { '<leader>sg', icon = { icon = '', color = 'cyan' } },
         { '<leader>sn', icon = { icon = '󰈞', color = 'blue' } },
         { '<leader>sr', icon = { icon = '󰺮', color = 'red' } },
         { '<leader>sw', icon = { icon = '', color = 'yellow' } },

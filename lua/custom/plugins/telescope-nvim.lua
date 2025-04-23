@@ -510,6 +510,17 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       }
     end, { desc = 'Search [F]iles in current parent directory folder' })
 
+    -- NOTE: find gist files
+    vim.keymap.set({ 'n' }, '<leader>sg', function()
+      builtin.find_files {
+        cwd = vim.fn.getcwd(),
+        previewer = false,
+        prompt_prefix = ' gist/',
+        prompt_title = 'Find Gist Files',
+        search_dirs = { '.gist' },
+      }
+    end, { desc = 'Search [F]iles in .gist folder' })
+
     -- Slightly advanced example of overriding default behavior and theme
     vim.keymap.set('n', '<leader><leader>', function()
       -- You can pass additional configuration to Telescope to change the theme, layout, etc.

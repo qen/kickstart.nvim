@@ -492,7 +492,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     end, { desc = 'Search [R]ipgrep Word selection' })
 
     -- NOTE: find files normal and visual mode
-    vim.keymap.set({ 'n', 'v' }, '<leader>sf', function()
+    vim.keymap.set({ 'n', 'v' }, '<leader>ss', function()
       local query = ''
       if vim.api.nvim_get_mode().mode == 'v' then
         query = get_visual_selection()
@@ -505,8 +505,23 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         previewer = false,
         default_text = query,
         prompt_prefix = top_dir and ' ' .. top_dir .. '/',
-        prompt_title = top_dir and 'Find Files ' .. top_dir,
+        prompt_title = top_dir and 'Find Files ' .. top_dir .. '/',
         search_dirs = top_dir and { top_dir },
+      }
+    end, { desc = 'Search [F]iles in current parent directory folder' })
+
+    vim.keymap.set({ 'n', 'v' }, '<leader>sf', function()
+      local query = ''
+      if vim.api.nvim_get_mode().mode == 'v' then
+        query = get_visual_selection()
+      end
+
+      local top_dir = get_top_level_dir()
+
+      builtin.find_files {
+        cwd = vim.fn.getcwd(),
+        previewer = false,
+        default_text = query
       }
     end, { desc = 'Search [F]iles in current parent directory folder' })
 

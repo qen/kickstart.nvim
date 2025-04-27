@@ -238,6 +238,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     local action_state = require 'telescope.actions.state'
     local actions = require 'telescope.actions'
     local builtin = require 'telescope.builtin'
+    local fzy_sorter = require('telescope.sorters').get_fzy_sorter()
 
     -- live_grep on file browser current directory
     -- NOTE: need ripgrep
@@ -292,6 +293,24 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       end
     end
 
+    local prioritize_app_folder_sorter = function()
+      return {
+        scoring_function = function(prompt, line)
+          local score = fzy_sorter.scoring_function(prompt, line)
+
+          -- If file path includes "app/", boost its score
+          if line:find '^app/' or line:find '/app/' then
+            score = score + 1500 -- even higher bonus if it's exactly top-level app/
+          elseif line:find '^vendor/' or line:find '/vendor/' then
+            score = score - 1500
+          end
+
+          return score
+        end,
+        highlighter = fzy_sorter.highlighter,
+      }
+    end
+
     -- [[ Configure Telescope ]]
     -- See `:help telescope` and `:help telescope.setup()`
     require('telescope').setup {
@@ -318,7 +337,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         --   'vendor/cache',
         --   'storage',
         -- },
-        file_sorter = require('telescope.sorters').get_fzy_sorter,
+        file_sorter = require('telescope.sorters').get_fzy_sorter(),
         vimgrep_arguments = {
           'rg',
           '--color=never',
@@ -340,16 +359,16 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         find_files = {
           mappings = {
             n = {
-              ['<C-g>'] = find_files_cwd
+              ['<C-g>'] = find_files_cwd,
             },
             i = {
-              ['<C-g>'] = find_files_cwd
+              ['<C-g>'] = find_files_cwd,
             },
           },
         },
         old_files = {
-          file_sorter = require('telescope.sorters').fuzzy_with_index_bias
-        }
+          file_sorter = require('telescope.sorters').fuzzy_with_index_bias,
+        },
         -- WARN: not working, can't figure out current direction
         -- live_grep = {
         --   mappings = {
@@ -516,14 +535,13 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         query = get_visual_selection()
       end
 
-      local top_dir = get_top_level_dir()
-
       builtin.find_files {
         cwd = vim.fn.getcwd(),
         previewer = false,
-        default_text = query
+        default_text = query,
+        file_sorter = prioritize_app_folder_sorter(),
       }
-    end, { desc = 'Search [F]iles in current parent directory folder' })
+    end, { desc = 'Search [F]iles in current working directory' })
 
     -- NOTE: find gist files
     vim.keymap.set({ 'n' }, '<leader>sg', function()

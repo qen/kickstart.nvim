@@ -24,14 +24,19 @@ local file_name_suffixes = {
 }
 
 local function similar_document_name()
-  local filename = string.gsub(vim.fn.expand '%:t:r:r:r:r', '^%W', '')
-  local name = filename
+  local filepath = vim.fn.expand('%:r') -- Get current buffer's full relative path
 
   for _, suffix in ipairs(file_name_suffixes) do
-    name = name:gsub(suffix, '')
+    filepath = filepath:gsub(suffix, '')
   end
 
-  return name
+  local path_after_first = filepath:match("^.-/(.+)") -- Remove the first folder (like "app/")
+
+  if not path_after_first then
+    return filepath -- If matching fails, fallback to whole path
+  end
+
+  return path_after_first
 end
 
 return { -- telescope: Fuzzy Finder (files, lsp, etc)
@@ -453,10 +458,9 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       builtin.find_files {
         cwd = vim.fn.getcwd(),
         previewer = false,
-        search_file = query,
+        default_text = query,
         prompt_title = '󰈞 similar name to > ' .. query,
         prompt_prefix = '󰈞 > ',
-        search_dirs = { 'app', 'packs', 'spec', 'jest', 'test', 'features' },
       }
     end, { desc = 'Search similar [N]ame on app folders' })
 

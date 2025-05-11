@@ -190,9 +190,10 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 
     -- Force re-evaluation of folds
     vim.cmd("normal! zx")
+    vim.cmd("normal! zv") -- open folds under cursor
 
     -- Open fold at cursor line (if it was closed)
-    vim.cmd(cursor_line .. "foldopen!")
+    -- vim.cmd(cursor_line .. "foldopen!")
   end,
 })
 
@@ -215,6 +216,18 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '\\q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+vim.keymap.set('n', '\\D', function()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local is_enabled = vim.diagnostic.is_enabled({ buf = bufnr })  -- ✅ correct usage
+
+  if is_enabled then
+    vim.diagnostic.disable(bufnr)
+    vim.notify("Diagnostics disabled", vim.log.levels.WARN)
+  else
+    vim.diagnostic.enable(bufnr)
+    vim.notify("Diagnostics enabled", vim.log.levels.INFO)
+  end
+end, { desc = "Toggle diagnostics in current buffer" })
 
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -449,6 +462,7 @@ require('lazy').setup({
         { '<leader>`', icon = { icon = '', color = 'green' } },
         { '\\f', icon = { icon = '󰚔', color = 'green' } },
         { '\\q', icon = { icon = '', color = 'red' } },
+        { '\\D', icon = { icon = '', color = 'red' } },
         { '<TAB>h', icon = { icon = '', color = 'yellow' } },
         { '<TAB>l', icon = { icon = '', color = 'yellow' } },
         { '<TAB>q', icon = { icon = '󱪡', color = 'red' } },

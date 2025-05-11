@@ -30,13 +30,15 @@ local function similar_document_name()
     filepath = filepath:gsub(suffix, '')
   end
 
-  local path_after_first = filepath:match("^.-/(.+)") -- Remove the first folder (like "app/")
+  -- local parent_filename = filepath:match("^.-/(.+)") -- Remove the first folder (like "app/")
+  -- Extract first parent directory and filename
+  local parent, filename = filepath:match("([^/]+)/([^/]+)$") -- matches: "parent/filename"
 
-  if not path_after_first then
-    return filepath -- If matching fails, fallback to whole path
+  if parent and filename then
+    return parent .. "/" .. filename
+  else
+    return filepath -- fallback if pattern match fails
   end
-
-  return path_after_first
 end
 
 return { -- telescope: Fuzzy Finder (files, lsp, etc)

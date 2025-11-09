@@ -82,6 +82,17 @@ return { -- vim-fugitive
     vim.keymap.set('n', '<BS>3', ':diffget 3<CR>', { desc = 'diff get 3' })
     vim.keymap.set('n', '<BS>R', ':%diffget REMOTE<CR>', { desc = 'diff get all remote, the branch merging' })
     vim.keymap.set('n', '<BS>L', ':%diffget LOCAL<CR>', { desc = 'diff get all local, current checkout branch' })
+
+
+    local which_key = require('which-key')
+
+    -- NOTE: WHICH-KEY Config HERE
+    which_key.add({
+      { '\\g', group = '[G]it blames', mode = { 'n' }, icon = { icon = '', color = 'blue' } },
+      { '\\go', icon = { icon = '', color = 'orange' } },
+      { '\\gv', icon = { icon = '', color = 'blue' } },
+      { '\\gh', icon = { icon = '', color = 'blue' } },
+    })
   end,
 }
 

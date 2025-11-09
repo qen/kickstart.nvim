@@ -167,7 +167,7 @@ vim.opt.foldmethod = 'expr'
 vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
 vim.opt.wrap = false
 
--- Disable foldexpr when the buffer is modified
+-- NOTE: Disable foldexpr when the buffer is modified
 vim.api.nvim_create_autocmd("TextChanged", {
   pattern = "*",
   callback = function()
@@ -178,7 +178,7 @@ vim.api.nvim_create_autocmd("TextChanged", {
   end,
 })
 
--- Re-enable folding on save
+-- NOTE: Re-enable folding on save
 vim.api.nvim_create_autocmd("BufWritePost", {
   pattern = "*",
   callback = function()
@@ -210,7 +210,7 @@ vim.opt.foldtext = 'v:lua.custom_fold_text()'
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
--- Clear highlights on search when pressing <Esc> in normal mode
+-- NOTE: Clear highlights on search when pressing <Esc> in normal mode
 --  See `:help hlsearch`
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
@@ -255,7 +255,7 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
--- Highlight when yanking (copying) text
+-- NOTE: Highlight when yanking (copying) text
 --  Try it with `yap` in normal mode
 --  See `:help vim.highlight.on_yank()`
 vim.api.nvim_create_autocmd('TextYankPost', {
@@ -266,13 +266,13 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
--- au BufNewFile,BufRead *.json.jbuilder set ft=ruby
+-- NOTE: au BufNewFile,BufRead *.json.jbuilder set ft=ruby
 vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
   pattern = { '*.json.jbuilder' },
   command = 'set ft=ruby',
 })
 
--- au BufNewFile,BufRead .env* set ft=ruby
+-- NOTE: au BufNewFile,BufRead .env* set ft=ruby
 vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
   pattern = { '.env*' },
   command = 'set ft=sh',
@@ -304,12 +304,26 @@ vim.keymap.set('n', '<F8>', ':let @*=expand("%:p")<CR>', { desc = 'Copy full fil
 
 vim.keymap.set('n', '<C-j>', '<C-^>', { desc = 'jump previous open file', noremap = true, silent = true })
 
--- Open file opened history if no argument passed
+-- NOTE: Open file opened history if no argument passed
+-- > automatically open two empty tabs
 vim.api.nvim_create_autocmd('VimEnter', {
   callback = function()
+    local first_arg = vim.fn.argv(0)
     if vim.fn.argc() == 0 then
       vim.schedule(function()
         require("telescope.builtin").oldfiles({ only_cwd = true })
+      end)
+      -- vim.cmd("tabnew")  -- Opens a second tab (first is always present by default)
+      -- vim.cmd("tabprevious")  -- Opens a second tab (first is always present by default)
+    elseif first_arg and vim.fn.isdirectory(first_arg) == 1 then
+      -- NOTE: execute telescope
+      vim.schedule(function()
+        require('telescope').extensions.file_browser.file_browser {
+          path = first_arg,
+          select_buffer = true,
+          -- theme = 'ivy',
+          prompt_path = true,
+        }
       end)
     end
   end,
@@ -437,42 +451,15 @@ require('lazy').setup({
       spec = {
         { '<leader>d', group = '[D]ocument symbols search' },
         { '<leader>r', group = '[R]ename' },
-        { '<leader>s', group = '[S]earch', icon = { icon = '󱎰', color = 'green' } },
-        { '<leader>p', group = '[P]eek Helper', icon = { icon = '󰸖', color = 'blue' } },
-        { '<leader>pd', icon = { icon = '', color = 'red' } },
-        { '<leader>pk', icon = { icon = '󰌌', color = 'blue' } },
-        { '<leader>ph', icon = { icon = '', color = 'blue' } },
-        { '<leader>pn', icon = { icon = '', color = 'yellow' } },
-        { '<leader>pt', icon = { icon = 'w', color = 'blue' } },
         { '<leader>w', group = '[W]orkspace' },
         { '<leader>t', group = '[T]oggle', icon = { icon = '', color = 'green' } },
         { '<leader>a', group = '[A]I assistance', icon = { icon = '󱚟', color = 'purple' } },
-        { '<leader> ', icon = { icon = '󱩾', color = 'red' } },
-        { '<leader>sc', icon = { icon = '', color = 'blue' } },
-        { '<leader>sd', icon = { icon = '󰝰', color = 'yellow' } },
-        { '<leader>ss', icon = { icon = '', color = 'orange' } },
-        { '<leader>sf', icon = { icon = '', color = 'orange' } },
-        { '<leader>sg', icon = { icon = '', color = 'cyan' } },
-        { '<leader>sn', icon = { icon = '󰈞', color = 'blue' } },
-        { '<leader>sr', icon = { icon = '󰺮', color = 'red' } },
-        { '<leader>sw', icon = { icon = '', color = 'yellow' } },
-        { '<TAB><TAB>', icon = { icon = '󱋢', color = 'orange' } },
-        { '<TAB>o', icon = { icon = '', color = 'orange' } },
-        { '<leader>s<TAB>', icon = { icon = '󱔗', color = 'red' } },
-        { '<leader>`', icon = { icon = '', color = 'green' } },
         { '\\f', icon = { icon = '󰚔', color = 'green' } },
         { '\\q', icon = { icon = '', color = 'red' } },
         { '\\D', icon = { icon = '', color = 'red' } },
         { '<TAB>h', icon = { icon = '', color = 'yellow' } },
         { '<TAB>l', icon = { icon = '', color = 'yellow' } },
         { '<TAB>q', icon = { icon = '󱪡', color = 'red' } },
-        { '\\m', group = 'Rails [M]igration', mode = { 'n' }, icon = { icon = '󰫏', color = 'red' } },
-        { '\\t', group = 'Rspec [T]est', mode = { 'n' }, icon = { icon = '', color = 'red' } },
-        { '\\g', group = '[G]it blames', mode = { 'n' }, icon = { icon = '', color = 'blue' } },
-        { '\\go', icon = { icon = '', color = 'orange' } },
-        { '\\gv', icon = { icon = '', color = 'blue' } },
-        { '\\gh', icon = { icon = '', color = 'blue' } },
-        { '\\d', icon = { icon = '󰙨', color = 'yellow' } },
         { '\\\\', icon = { icon = '', color = 'red' } },
         { '\\<ENTER>', icon = { icon = '', color = 'red' } },
       },

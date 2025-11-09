@@ -25,25 +25,24 @@ return {
   version = false, -- Set this to "*" to always pull the latest release version, or set it to false to update to the latest code changes.
   opts = {
 
-    -- INFO: OpenAI
-    provider = 'openai',
-    openai = {
-      endpoint = 'https://api.openai.com/v1',
-      model = 'gpt-4o', -- your desired model (or use gpt-4o, etc.)
-      timeout = 30000, -- timeout in milliseconds
-      temperature = 0, -- adjust if needed
-      max_tokens = 4096,
-      -- reasoning_effort = "high" -- only supported for reasoning models (o1, etc.)
-    },
+    providers = {
+      -- INFO: OpenAI
+      openai = {
+        endpoint = 'https://api.openai.com/v1',
+        model = 'gpt-4o', -- your desired model (or use gpt-4o, etc.)
+        timeout = 30000, -- timeout in milliseconds
+        -- temperature = 0, -- adjust if needed
+        max_tokens = 4096,
+        -- reasoning_effort = "high" -- only supported for reasoning models (o1, etc.)
+      },
+      -- claude = {
+      --   endpoint = 'https://api.anthropic.com',
+      --   model = 'claude-3-5-sonnet-20241022',
+      --   temperature = 0,
+      --   max_tokens = 4096,
+      -- },
+    }
 
-    -- INFO: Claude
-    -- provider = 'claude',
-    -- claude = {
-    --   endpoint = 'https://api.anthropic.com',
-    --   model = 'claude-3-5-sonnet-20241022',
-    --   temperature = 0,
-    --   max_tokens = 4096,
-    -- },
   },
   -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
   build = 'make',

@@ -1,0 +1,44 @@
+return {
+  "YousefHadder/markdown-plus.nvim",
+  ft = {
+    "markdown",
+    -- "text",
+    -- "txt"
+  },  -- Load on multiple filetypes
+  config = function()
+    require("markdown-plus").setup({
+      -- Configuration options (all optional)
+      enabled = true,
+      features = {
+        list_management = true,  -- List management features
+        text_formatting = true,  -- Text formatting features
+        headers_toc = true,      -- Headers + TOC features
+        links = true,            -- Link management features
+        quotes = true,           -- Blockquote toggling feature
+        code_block = true,       -- Code block conversion feature
+        table = true,            -- Table support features
+      },
+      keymaps = {
+        enabled = true,  -- Enable default keymaps (<Plug> available for custom)
+      },
+      toc = {            -- TOC window configuration
+        initial_depth = 2,
+      },
+      table = {          -- Table sub-configuration
+        auto_format = true,
+        default_alignment = "left",
+        confirm_destructive = true,  -- Confirm before transpose/sort operations
+        keymaps = {
+          enabled = true,
+          prefix = "<leader>t",
+          insert_mode_navigation = true,  -- Alt+hjkl cell navigation
+        },
+      },
+      filetypes = {
+        "markdown",
+        -- "text",
+        -- "txt"
+      },  -- Enable for these filetypes
+    })
+  end,
+}

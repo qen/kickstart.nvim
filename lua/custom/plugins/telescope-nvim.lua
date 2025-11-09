@@ -23,6 +23,31 @@ local file_name_suffixes = {
   '_fabricator$',
 }
 
+local doc_dirs = {
+  {
+    name = ".gist",
+    key = "<leader>smg",
+    title = "Find Gist Files",
+    prefix = " gist/",
+    desc = "Search files in gist folder",
+  },
+  {
+    name = "doc",
+    key = "<leader>smd",
+    title = "Find Doc Files",
+    prefix = " doc/",
+    desc = "Search files in doc folder",
+  },
+  -- {
+  --   name = "~/master-notes",
+  --   key = "<leader>msd",
+  --   title = "Find Master Notes Files",
+  --   prefix = "  master-notes/",
+  --   desc = "Search files in master notes folder",
+  -- },
+}
+
+-- NOTE: Helper function to similart document name
 local function similar_document_name()
   local filepath = vim.fn.expand('%:r') -- Get current buffer's full relative path
 
@@ -39,6 +64,12 @@ local function similar_document_name()
   else
     return filepath -- fallback if pattern match fails
   end
+end
+
+-- NOTE: Helper function to check if a directory exists
+local function dir_exists(path)
+  local stat = vim.loop.fs_stat(path)
+  return stat and stat.type == "directory"
 end
 
 return { -- telescope: Fuzzy Finder (files, lsp, etc)
@@ -242,10 +273,11 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     -- do as well as how to actually do it!
 
     -- See `:help telescope.builtin`
-    local action_state = require 'telescope.actions.state'
-    local actions = require 'telescope.actions'
-    local builtin = require 'telescope.builtin'
+    local action_state = require('telescope.actions.state')
+    local actions = require('telescope.actions')
+    local builtin = require('telescope.builtin')
     local fzy_sorter = require('telescope.sorters').get_fzy_sorter()
+    local which_key = require('which-key')
 
     -- live_grep on file browser current directory
     -- NOTE: need ripgrep
@@ -316,6 +348,11 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         end,
         highlighter = fzy_sorter.highlighter,
       }
+    end
+
+    local function dir_exists(path)
+      local stat = vim.loop.fs_stat(path)
+      return stat and stat.type == "directory"
     end
 
     -- [[ Configure Telescope ]]
@@ -549,16 +586,16 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       }
     end, { desc = 'Search [F]iles in current working directory' })
 
-    -- NOTE: find gist files
-    vim.keymap.set({ 'n' }, '<leader>sg', function()
-      builtin.find_files {
-        cwd = vim.fn.getcwd(),
-        previewer = false,
-        prompt_prefix = ' gist/',
-        prompt_title = 'Find Gist Files',
-        search_dirs = { '.gist' },
-      }
-    end, { desc = 'Search [F]iles in .gist folder' })
+    -- -- NOTE: find gist files
+    -- vim.keymap.set({ 'n' }, '<leader>sg', function()
+    --   builtin.find_files {
+    --     cwd = vim.fn.getcwd(),
+    --     previewer = false,
+    --     prompt_prefix = ' gist/',
+    --     prompt_title = 'Find Gist Files',
+    --     search_dirs = { '.gist' },
+    --   }
+    -- end, { desc = 'Search [F]iles in .gist folder' })
 
     -- Slightly advanced example of overriding default behavior and theme
     vim.keymap.set('n', '<leader><leader>', function()
@@ -580,6 +617,51 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         prompt_title = 'Live Grep in Open Files',
       }
     end, { desc = '[S]earch [/] in Open Files' })
+
+    -- Get current working directory
+    local cwd = vim.fn.getcwd()
+    -- iterate to doc directories
+    for _, dir in ipairs(doc_dirs) do
+      local full_path = cwd .. "/" .. dir.name
+      if dir_exists(full_path) then
+        vim.keymap.set("n", dir.key, function()
+          builtin.find_files {
+            cwd = cwd,
+            previewer = false,
+            prompt_prefix = dir.prefix,
+            prompt_title = dir.title,
+            search_dirs = { dir.name },
+          }
+        end, { desc = dir.desc })
+      end
+    end
+
+    -- NOTE: WHICH-KEY Config HERE
+    which_key.add({
+      { '<leader>p', group = '[P]eek Helper', icon = { icon = '󰸖', color = 'blue' } },
+      { '<leader>pd', icon = { icon = '', color = 'red' } },
+      { '<leader>pk', icon = { icon = '󰌌', color = 'blue' } },
+      { '<leader>ph', icon = { icon = '', color = 'blue' } },
+      { '<leader>pn', icon = { icon = '', color = 'yellow' } },
+      { '<leader>pt', icon = { icon = 'w', color = 'blue' } },
+      { '<TAB><TAB>', icon = { icon = '󱋢', color = 'orange' } },
+      { '<TAB>o', icon = { icon = '', color = 'orange' } },
+      { '<leader>s<TAB>', icon = { icon = '󱔗', color = 'red' } },
+      { '<leader>`', icon = { icon = '', color = 'green' } },
+      { '<leader>s', group = '[S]earch', icon = { icon = '󱎰', color = 'green' } },
+      { '<leader> ', icon = { icon = '󱩾', color = 'red' } },
+      { '<leader>sc', icon = { icon = '', color = 'blue' } },
+      { '<leader>sd', icon = { icon = '󰝰', color = 'yellow' } },
+      { '<leader>ss', icon = { icon = '', color = 'orange' } },
+      { '<leader>sf', icon = { icon = '', color = 'orange' } },
+      { '<leader>sf', icon = { icon = '', color = 'orange' } },
+      { '<leader>sn', icon = { icon = '󰈞', color = 'blue' } },
+      { '<leader>sr', icon = { icon = '󰺮', color = 'red' } },
+      { '<leader>sw', icon = { icon = '', color = 'yellow' } },
+      { '<leader>sm', group = '[S]earch Markdown directories', icon = { icon = '', color = 'white' } },
+      { '<leader>smg', icon = { icon = '', color = 'red' } },
+      { '<leader>smd', icon = { icon = '', color = 'white' } },
+    })
   end,
 }
 

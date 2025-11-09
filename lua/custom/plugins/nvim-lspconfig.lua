@@ -217,11 +217,16 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
       },
     }
 
-    servers['ruby_lsp'] = {
+    local ruby_lsp_gemfile = vim.fn.getenv("RUBY_LSP_GEMFILE")
+    if ruby_lsp_gemfile == vim.NIL or ruby_lsp_gemfile == "" then
       -- bundle install --gemfile=~/.ruby-lsp/Gemfile
+      ruby_lsp_gemfile = "~/.ruby-lsp/Gemfile"
+    end
+
+    servers['ruby_lsp'] = {
       -- mason = false,
       enabled = vim.g.run_ruby_lsp,
-      cmd_env = { BUNDLE_GEMFILE = '~/.ruby-lsp/Gemfile' },
+      cmd_env = { BUNDLE_GEMFILE = ruby_lsp_gemfile },
       cmd = { 'bundle', 'exec', 'ruby-lsp' },
       filetypes = { 'ruby' },
       root_dir = function()

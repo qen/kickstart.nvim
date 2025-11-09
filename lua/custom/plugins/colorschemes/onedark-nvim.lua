@@ -125,6 +125,7 @@
 
 return { -- theme onedark
   'navarasu/onedark.nvim',
+  priority = 1000,
   config = function()
     local colors = require 'onedark.palette'
     require('onedark').setup {
@@ -142,13 +143,13 @@ return { -- theme onedark
       -- -- Change code style ---
       -- -- Options are italic, bold, underline, none
       -- -- You can configure multiple style with comma separated, For e.g., keywords = 'italic,bold'
-      -- code_style = {
-      --   comments = 'italic',
-      --   keywords = 'none',
-      --   functions = 'none',
-      --   strings = 'none',
-      --   variables = 'none',
-      -- },
+      code_style = {
+        comments = 'none',
+        -- keywords = 'none',
+        -- functions = 'none',
+        -- strings = 'none',
+        -- variables = 'none',
+      },
       --
       -- -- Lualine options --
       -- lualine = {
@@ -163,6 +164,11 @@ return { -- theme onedark
           bg = 'none',
         },
         MiniStatuslineFilename = { fg = '$yellow', bg = '$bg1', fmt = 'bold' },
+        -- Comment = { italic = false },
+        -- ["@comment.ruby"] = { italic = false },
+        -- Comment = { fg = "#ff0000", italic = false },
+        -- ["@comment"] = { fg = "#ff0000", italic = false },
+        ["@comment.ruby"] = { fg = colors.dark.grey, italic = false },
       },
       --
       -- -- Plugins Config --

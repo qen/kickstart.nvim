@@ -110,19 +110,55 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
     }
 
     -- === ruby_lsp via project binstub or bundle exec ===
+
     vim.lsp.config('ruby_lsp', {
       enabled = vim.g.run_ruby_lsp,
       filetypes = { 'ruby' },
       root_markers = { 'Gemfile', '.git' },
+      init_options = {
+        formatter = "none",
+        linters = {},               -- let rubocop-lsp or null-ls do it, or nothing
+        enabledFeatures = {         -- only keep what you use
+          "codeActions",
+          "diagnostics",
+          "documentHighlight",
+          "hover",
+          "workspaceSymbol",
+          -- drop "inlayHint","codeLens","semanticHighlighting" if you don't need them
+          "inlayHint",
+          "codeLens",
+          "semanticHighlighting",
+        },
+      },
       on_new_config = function(config, root_dir)
-        local bin = root_dir .. '/bin/ruby-lsp'
-        if (vim.uv or vim.loop).fs_stat(bin) then
-          config.cmd = { bin }
-          config.cmd_env = nil
+        -- NOTE: to initialize .ruby-lsp/Gemfile
+        -- rvm use
+        -- gem install ruby-lsp
+        -- ruby-lsp
+
+        -- local bin = root_dir .. '/bin/ruby-lsp'
+        -- if (vim.uv or vim.loop).fs_stat(bin) then
+        --   config.cmd = { bin }
+        --   config.cmd_env = nil
+        -- else
+        --   config.cmd = { 'bundle', 'exec', 'ruby-lsp' }
+        --   config.cmd_env = { BUNDLE_GEMFILE = root_dir .. '/Gemfile' }
+        -- end
+
+        -- local ruby_lsp_gemfile = vim.fn.getenv("RUBY_LSP_GEMFILE")
+        -- if ruby_lsp_gemfile == vim.NIL or ruby_lsp_gemfile == "" then
+        --   -- bundle install --gemfile=~/.ruby-lsp/Gemfile
+        --   ruby_lsp_gemfile = "~/.ruby-lsp/Gemfile"
+        -- end
+
+        local ruby_lsp_gemfile = root_dir .. '/.ruby-lsp/Gemfile'
+        if (vim.uv or vim.loop).fs_stat(ruby_lsp_gemfile) then
+          config.cmd_env = { BUNDLE_GEMFILE = ruby_lsp_gemfile }
         else
-          config.cmd = { 'bundle', 'exec', 'ruby-lsp' }
           config.cmd_env = { BUNDLE_GEMFILE = root_dir .. '/Gemfile' }
         end
+
+        config.cmd = { 'bundle', 'exec', 'ruby-lsp' }
       end,
     })
 

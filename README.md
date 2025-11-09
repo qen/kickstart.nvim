@@ -250,7 +250,7 @@ run in cmd as **admin**:
 winget install --accept-source-agreements chocolatey.chocolatey
 ```
 
-2. install all requirements using choco, exit the previous cmd and
+1. install all requirements using choco, exit the previous cmd and
 open a new one so that choco path is set, and run in cmd as **admin**:
 ```
 choco install -y neovim git ripgrep wget fd unzip gzip mingw make

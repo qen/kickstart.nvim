@@ -1,5 +1,6 @@
 return {
   "YousefHadder/markdown-plus.nvim",
+  enabled = true,
   ft = {
     "markdown",
     -- "text",

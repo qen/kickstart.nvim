@@ -4,6 +4,7 @@
 -- See the kickstart.nvim README for more information
 return { -- Comment
   'numToStr/Comment.nvim',
+  enabled = false,
   config = function ()
     require('Comment').setup()
   end

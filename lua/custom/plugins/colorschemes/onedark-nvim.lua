@@ -128,6 +128,11 @@ return { -- theme onedark
   priority = 1000,
   config = function()
     local colors = require 'onedark.palette'
+    local COMMENT = '#8D9091' -- TITANIUM
+
+    -- local COMMENT = '#B87333' -- POLISHED COPPER
+    -- local COMMENT = '#B0B2B4' -- TITANIUM SILVER
+
     require('onedark').setup {
       -- Main options --
       style = 'warmer', -- Default theme style. Choose between 'dark', 'darker', 'cool', 'deep', 'warm', 'warmer' and 'light'
@@ -168,7 +173,17 @@ return { -- theme onedark
         -- ["@comment.ruby"] = { italic = false },
         -- Comment = { fg = "#ff0000", italic = false },
         -- ["@comment"] = { fg = "#ff0000", italic = false },
-        ["@comment.ruby"] = { fg = colors.dark.grey, italic = false },
+        -- ["@comment.ruby"] = { fg = colors.dark.grey, italic = false },
+        ["@comment.ruby"] = { fg = COMMENT, italic = false },
+        ["@comment"]      = { fg = COMMENT, italic = false },
+        ["@spell"]        = { fg = COMMENT, italic = false },
+        Comment           = { fg = COMMENT, italic = false },
+        -- ✨ Spell-highlight adjustments so @spell no longer hides comment color
+        -- leave fg unset → keeps underlying comment color visible
+        SpellBad   = { undercurl = true, sp = "#ff5f5f", italic = false },
+        SpellCap   = { undercurl = true, sp = "#5fafff", italic = false },
+        SpellLocal = { undercurl = true, sp = "#afff5f", italic = false },
+        SpellRare  = { undercurl = true, sp = "#ffaf5f", italic = false },
       },
       --
       -- -- Plugins Config --

@@ -21,12 +21,13 @@
 -- See the kickstart.nvim README for more information
 return {
   'yetone/avante.nvim',
+  enabled = false, -- vim.fn.getenv("OPENAI_API_KEY") ~= vim.NIL,
   event = 'VeryLazy',
   version = false, -- Set this to "*" to always pull the latest release version, or set it to false to update to the latest code changes.
   opts = {
 
     providers = {
-      -- INFO: OpenAI
+    -- INFO: OpenAI
       openai = {
         endpoint = 'https://api.openai.com/v1',
         model = 'gpt-4o', -- your desired model (or use gpt-4o, etc.)

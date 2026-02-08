@@ -37,34 +37,53 @@ return {
     --   { "\\b", icon = { icon = "󰙨", color = "yellow" } },
     -- }, { buffer = vim.api.nvim_get_current_buf() });
 
-    -- -- Re-register on each Ruby buffer so everything is buffer-local
-    -- vim.api.nvim_create_autocmd("FileType", {
-    --   pattern = "ruby",
-    --   callback = function(args)
-    --     local bufnr = args.buf
-    --     local wk = require("which-key")
-    --
-    --     -- buffer-local which-key groups/labels
-    --     wk.add({
-    --       { "\\t", group = "Rspec [T]est", mode = "n" },
-    --       { "\\m", group = "Rails [M]igration", mode = "n" },
-    --       { "\\d", desc  = "Insert binding.pry", mode = "n" },
-    --       { "\\b", desc  = "Insert $pry=1",     mode = "n" },
-    --     }, { buffer = bufnr })
-    --
-    --     -- buffer-local keymaps
-    --     local map = function(lhs, rhs, desc)
-    --       vim.keymap.set("n", lhs, rhs, { buffer = bufnr, desc = desc })
-    --     end
-    --
-    --     map("\\tt", vim.fn.RunNearestSpec, "Run neares[T] spec")
-    --     map("\\tl", vim.fn.RunLastSpec,    "Run [L]ast spec")
-    --     map("\\d",  function() vim.cmd.execute [["normal \<s-O>binding.pry if $pry\<ESC>:w\<CR>"]] end, "Insert binding.pry")
-    --     map("\\b",  function() vim.cmd.execute [["normal \<s-O>$pry=1\<ESC>:w\<CR>"]] end, "Insert $pry=1")
-    --     map("\\mm", function() vim.cmd "Start specg dbmigrate"  end, "Run db:migrate")
-    --     map("\\ml", function() vim.cmd "Start specg dbload"     end, "Run db:schema:load")
-    --   end,
-    -- })
+    -- buffer-local keymaps
+    local map = function(lhs, rhs, desc, bufnr)
+      vim.keymap.set("n", lhs, rhs, { buffer = bufnr, desc = desc })
+    end
+
+    -- Re-register on each Ruby buffer so everything is buffer-local
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = "ruby",
+      callback = function(args)
+        local bufnr = args.buf
+        local wk = require("which-key")
+
+        -- vim.keymap.set("n", "\\d",
+        --   function() vim.cmd.execute [["normal \<s-O>binding.pry if $pry\<ESC>:w\<CR>"]] end,
+        --   vim.tbl_extend("force", opts, { desc = "Insert [D]ebug binding.pry" })
+        -- )
+        -- vim.keymap.set("n", "\\b",
+        --   function() vim.cmd.execute [["normal \<s-O>$pry=1\<ESC>:w\<CR>"]] end,
+        --   vim.tbl_extend("force", opts, { desc = "Insert $pry=1" })
+        -- )
+
+        -- -- buffer-local which-key groups/labels
+        wk.add({
+          -- { "\\t", group = "Rspec [T]est", mode = "n" },
+          -- { "\\m", group = "Rails [M]igration", mode = "n" },
+          { "\\d", desc  = "Insert binding.pry", mode = "n" },
+          { "\\b", desc  = "Insert $pry=1",     mode = "n" },
+        }, { buffer = bufnr })
+        --
+        --
+        -- map("\\tt", vim.fn.RunNearestSpec, "Run neares[T] spec")
+        -- map("\\tl", vim.fn.RunLastSpec,    "Run [L]ast spec")
+
+        map("\\d", function() vim.cmd.execute [["normal \<s-O>binding.pry if $pry\<ESC>:w\<CR>"]] end,
+          "Insert binding.pry",
+          bufnr
+        )
+
+        map("\\b", function() vim.cmd.execute [["normal \<s-O>$pry=1\<ESC>:w\<CR>"]] end,
+          "Insert $pry=1",
+          bufnr
+        )
+
+        -- map("\\mm", function() vim.cmd "Start specg dbmigrate"  end, "Run db:migrate")
+        -- map("\\ml", function() vim.cmd "Start specg dbload"     end, "Run db:schema:load")
+      end,
+    })
   end,
 }
 

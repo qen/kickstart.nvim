@@ -115,19 +115,29 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
       enabled = vim.g.run_ruby_lsp,
       filetypes = { 'ruby' },
       root_markers = { 'Gemfile', '.git' },
+      single_file_support = false,
       init_options = {
         formatter = "none",
         linters = {},               -- let rubocop-lsp or null-ls do it, or nothing
         enabledFeatures = {         -- only keep what you use
           "codeActions",
-          "diagnostics",
-          "documentHighlight",
-          "hover",
-          "workspaceSymbol",
-          -- drop "inlayHint","codeLens","semanticHighlighting" if you don't need them
-          "inlayHint",
           "codeLens",
+          "completion",
+          "definition",
+          "diagnostics",
+          "documentHighlights",
+          "documentLink",
+          "documentSymbols",
+          "foldingRanges",
+          "formatting",
+          "hover",
+          "inlayHint",
+          -- "onTypeFormatting",
+          "selectionRanges",
           "semanticHighlighting",
+          "signatureHelp",
+          "typeHierarchy",
+          "workspaceSymbol"
         },
       },
       on_new_config = function(config, root_dir)

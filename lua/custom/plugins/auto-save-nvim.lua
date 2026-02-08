@@ -34,8 +34,7 @@
 -- })
 
 return {
-  'qen/auto-save.nvim', -- NOTE: I THINK visual autosave thing fells much more better here, rather than in condition
-  -- 'okuuva/auto-save.nvim',
+  'okuuva/auto-save.nvim',
   dependencies = {
     'j-hui/fidget.nvim',
     opts = {
@@ -64,7 +63,8 @@ return {
     enabled = true, -- start auto-save when the plugin is loaded (i.e. when your package manager loads it)
     trigger_events = { -- See :h events
       immediate_save = { 'BufLeave', 'FocusLost' }, -- vim events that trigger an immediate save
-      defer_save = { 'InsertLeave', 'TextChanged', 'CursorMoved' }, -- vim events that trigger a deferred save (saves after `debounce_delay`)
+      -- defer_save = { 'InsertLeave', 'TextChanged', 'CursorMoved' }, -- vim events that trigger a deferred save (saves after `debounce_delay`)
+      defer_save = { }, -- vim events that trigger a deferred save (saves after `debounce_delay`)
       cancel_deferred_save = { 'InsertEnter' }, -- vim events that cancel a pending deferred save
     },
     -- function that takes the buffer handle and determines whether to save the current buffer or not
@@ -95,5 +95,26 @@ return {
     debounce_delay = 3000,
     -- log debug messages to 'auto-save.log' file in neovim cache directory, set to `true` to enable
     debug = false,
+
+    callbacks = {
+      before_saving = function()
+        -- store view (cursor, folds, topline, etc.) in buffer-local var
+        vim.b._autosave_saved_view = vim.fn.winsaveview()
+        vim.b._autosave_saved_foldlevel = vim.fn.foldlevel('.')
+      end,
+      after_saving = function()
+        -- restore view if we saved one
+        if vim.b._autosave_saved_view then
+          vim.fn.winrestview(vim.b._autosave_saved_view)
+          vim.b._autosave_saved_view = nil
+        end
+        -- restore the saved foldlevel (window-local)
+        if vim.b._autosave_saved_foldlevel ~= nil then
+          -- use vim.wo to set foldlevel for the current window
+          vim.wo.foldlevel = vim.b._autosave_saved_foldlevel
+          vim.b._autosave_saved_foldlevel = nil
+        end
+      end,
+    },
   },
 }

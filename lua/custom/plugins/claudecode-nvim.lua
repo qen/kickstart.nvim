@@ -36,7 +36,7 @@ return {
     terminal_cmd = "claude", -- Point to local installation
     diff_opts = {
       -- enabled = false,
-      open_in_new_tab = true,
+      -- open_in_new_tab = true,
       -- hide_terminal_in_new_tab = true,
     },
     terminal = {

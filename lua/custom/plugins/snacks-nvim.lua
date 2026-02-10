@@ -50,24 +50,40 @@ return {
     notifier = { enabled = true },
     quickfile = { enabled = true },
     scope = { enabled = true },
-    scroll = {
-      enabled = true,
-      filter = function(buf)
-        return vim.api.nvim_buf_line_count(buf) < 1000
-      end,
-    },
+    scroll = { enabled = false },
+    -- scroll = {
+    --   enabled = true,
+    --   filter = function(buf)
+    --     return vim.api.nvim_buf_line_count(buf) < 1000
+    --   end,
+    -- },
     statuscolumn = { enabled = true },
     words = { enabled = true },
     terminal = {},
   },
   keys = {
     { "<A-`>", function()
-      local branch = vim.fn.system('git branch --show-current'):gsub("\n", "")
-      local title = branch ~= "" and ("  " .. branch .. " ") or " Terminal "
+      -- local git_branch_name = vim.fn.system('git branch --show-current'):gsub("\n", "")
+      -- local git_branch_status = vim.fn.system('git status --porcelain'):gsub("\n", "")
+      vim.g.snacks_git_summary = MiniStatusline.section_git { trunc_width = 70 }
+      -- local snacks_git_summary = MiniStatusline.section_git { trunc_width = 70 }
+      -- local title = branch ~= "" and ("  " .. branch .. " ") or " Terminal "
+
+      -- local git_summary = MiniStatusline.section_git { trunc_width = 70 }
+      -- -- Refresh snacks_git_summary on all terminal buffers
+      -- for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+      --   if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buftype == 'terminal' and vim.b[buf].snacks_git_summary then
+      --     vim.b[buf].snacks_git_summary = git_summary
+      --   end
+      -- end
+
       Snacks.terminal(nil, {
         env = { DRACULA_DISPLAY_GIT = "0" },
         win = {
-          b = { snacks_term_title = title },
+          b = {
+            -- snacks_term_title = '' .. title,
+            snacks_git_summary = MiniStatusline.section_git { trunc_width = 70 }
+          },
           -- term_title = title,
           keys = {
             hide = {

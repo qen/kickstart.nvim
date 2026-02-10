@@ -72,8 +72,8 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       return '%#' .. icon_hl .. '#' .. icon .. ' %#' .. hl .. '#' .. filename
     end
 
-    local function get_git_dirty_state()
-      local summary = vim.b.minigit_summary_string or ''
+    local function get_git_dirty_state(snacks_git_summary)
+      local summary = snacks_git_summary or vim.b.minigit_summary_string or ''
       if summary:find '%( M%)' or summary:find '%(A%)' or summary:find '%(D%)' then
         return true
       end
@@ -100,12 +100,12 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       )
     end
 
-    local function status_git_branch()
-      local full_git = MiniStatusline.section_git { trunc_width = 70 } or ''
+    local function status_git_branch(snacks_full_git_summary)
+      local full_git = snacks_full_git_summary or MiniStatusline.section_git { trunc_width = 70 } or ''
 
       local icon = ''
       local icon_hl = 'MiniStatuslineGitClean'
-      local is_dirty = get_git_dirty_state()
+      local is_dirty = get_git_dirty_state(snacks_full_git_summary)
       if is_dirty then
         icon = '✗'
         icon_hl = 'MiniStatuslineGitDirty'
@@ -198,12 +198,18 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
         active = function()
           build_winbar(true)
           local mode, mode_hl = MiniStatusline.section_mode { trunc_width = 120 }
-          local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
 
           -- Show floating window title (e.g. Snacks terminal) in statusline
-          if vim.bo.buftype == 'terminal' and vim.b.snacks_term_title ~= '' then
-            fileinfo = vim.b.snacks_term_title
+          if vim.bo.buftype == 'terminal' and vim.g.snacks_git_summary then
+            return MiniStatusline.combine_groups {
+              { hl = mode_hl, strings = { mode } },
+              '%<', -- Mark general truncate point
+              '%=', -- End left alignment
+              status_git_branch(vim.g.snacks_git_summary),
+            }
           end
+
+          local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
 
           local location = MiniStatusline.section_location { trunc_width = 75 }
           local search = MiniStatusline.section_searchcount { trunc_width = 75 }

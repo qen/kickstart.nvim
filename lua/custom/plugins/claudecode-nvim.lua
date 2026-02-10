@@ -26,7 +26,7 @@
 --   end,
 -- })
 
-local term_fullscreen = false
+-- local term_fullscreen = false
 local toggle_key = "<A-\\>"  -- Alt/Meta + comma
 return {
   "coder/claudecode.nvim",
@@ -43,13 +43,14 @@ return {
     terminal = {
       provider = "external",
       provider_opts = {
-        external_terminal_cmd = "tmux split-window -h -l 40%% %s; select-pane -T 'Claude'",
+        external_terminal_cmd = "tmux split-window -h -l 40%% %s",
         -- external_terminal_cmd = "tmux split-window %s",
       },
       snacks_win_opts = {
         -- position = "float",
         -- width = 0.4,
         -- height = 0.9,
+        -- b = { snacks_term_title = 'Claude' },
         keys = {
           claude_hide = {
             toggle_key,
@@ -115,15 +116,28 @@ return {
     {
       toggle_key,
       function()
-        -- local panes = vim.fn.system("tmux list-panes -F '#{pane_id} #{pane_current_command} #{pane_title}'")
-        -- local claude_pane = panes:match("(%%%d+) %S+ .-Claude")
+        if require('claudecode').is_claude_connected() then
+          vim.fn.system("tmux select-pane -t :.+")
+        else
+          vim.cmd("ClaudeCode")
+        end
+
+        -- local panes = vim.fn.system("tmux list-panes -F '#{pane_id} #{pane_current_command}'")
+        -- local claude_pane = nil
+        -- for line in panes:gmatch("[^\n]+") do
+        --   local pane_id, cmd = line:match("(%%%d+)%s+(.+)")
+        --   if cmd and cmd:match("^claude") then
+        --     claude_pane = pane_id
+        --     break
+        --   end
+        -- end
+        --
         -- if claude_pane then
-        --   -- vim.fn.system("tmux select-pane -t " .. claude_pane)
-        --   vim.fn.system("tmux select-pane -l ")
+        --   vim.fn.system("tmux select-pane -t " .. claude_pane)
         -- else
         --   vim.cmd("ClaudeCode")
         -- end
-        vim.cmd("ClaudeCode")
+
       end,
       desc = "Claude Code",
       mode = { "n", "x" },

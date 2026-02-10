@@ -50,7 +50,12 @@ return {
     notifier = { enabled = true },
     quickfile = { enabled = true },
     scope = { enabled = true },
-    scroll = { enabled = true },
+    scroll = {
+      enabled = true,
+      filter = function(buf)
+        return vim.api.nvim_buf_line_count(buf) < 1000
+      end,
+    },
     statuscolumn = { enabled = true },
     words = { enabled = true },
     terminal = {},
@@ -101,22 +106,25 @@ return {
             rspec_file_line = {
               "<A-1>",
               function(_self)
-                local file = vim.fn.expand('%:p')
-                local line = vim.fn.line('.')
+                local text = nil
 
-                local file_line = vim.fn.shellescape(file) .. ":" .. line
                 for _, win in ipairs(vim.api.nvim_list_wins()) do
                   local buf = vim.api.nvim_win_get_buf(win)
                   local buftype = vim.bo[buf].buftype
                   if buftype ~= 'terminal' then
                     local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ':.')
                     local cursor = vim.api.nvim_win_get_cursor(win)
-                    file_line = name .. ':' .. cursor[1]
+                    if vim.fn.fnamemodify(name, ':e') == 'rb' then
+                      text = 'bundle exec rspec ' .. name .. ':' .. cursor[1]
+                    elseif vim.fn.fnamemodify(name, ':e') == 'js' then
+                      text = 'yarn test' .. name
+                    else
+                      text = name
+                    end
                     break
                   end
                 end
 
-                local text = "bundle exec rspec " .. file_line
                 vim.fn.setreg("+", text)
                 vim.notify('Copy to clipboard: '..text, vim.log.levels.INFO)
               end,
@@ -143,6 +151,7 @@ return {
         {
           env = { DRACULA_DISPLAY_GIT = "0" },
           win = {
+            b = { snacks_term_title = 'bundle exec rails console' },
             position = "bottom",
             -- width = 0.4,
             height = 0.4,

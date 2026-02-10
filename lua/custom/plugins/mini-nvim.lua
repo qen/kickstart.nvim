@@ -199,6 +199,12 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
           build_winbar(true)
           local mode, mode_hl = MiniStatusline.section_mode { trunc_width = 120 }
           local fileinfo = MiniStatusline.section_fileinfo { trunc_width = 120 }
+
+          -- Show floating window title (e.g. Snacks terminal) in statusline
+          if vim.bo.buftype == 'terminal' and vim.b.snacks_term_title ~= '' then
+            fileinfo = vim.b.snacks_term_title
+          end
+
           local location = MiniStatusline.section_location { trunc_width = 75 }
           local search = MiniStatusline.section_searchcount { trunc_width = 75 }
 

@@ -1,4 +1,4 @@
-vim.keymap.set('t', '<A-Escape>', "<C-\\><C-N><C-w>k", { desc = 'Exit terminal and move focus top', noremap = true, silent = true })
+vim.keymap.set('t', '<A-Escape>', "<C-\\><C-N>", { desc = 'Escape terminal mode', noremap = true, silent = true })
 -- vim.keymap.set('t', '<Escape-Escape>', "<C-\\><C-N>", { desc = 'Exit terminal mode', noremap = true, silent = true })
 -- vim.keymap.set('t', '<A-`>', "<C-\\><C-N><C-w>h", { desc = 'move focus to window left', noremap = true, silent = true })
 -- vim.keymap.set('t', '<A-\\>', "<C-\\><C-N><C-w>h<eader>ac", { desc = 'toggle claudecode in terminal', noremap = true, silent = true })
@@ -62,11 +62,8 @@ return {
       Snacks.terminal(nil, {
         env = { DRACULA_DISPLAY_GIT = "0" },
         win = {
-          title = title,
-          wo = {
-            statusline = "" .. (branch ~= "" and " "..branch or "terminal"),
-            -- winbar = ' %{fnamemodify(get(b:, "term_cwd", getcwd()), ":t")}',
-          },
+          b = { snacks_term_title = title },
+          -- term_title = title,
           keys = {
             hide = {
               "<A-`>",

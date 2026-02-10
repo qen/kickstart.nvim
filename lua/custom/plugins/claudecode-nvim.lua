@@ -26,6 +26,7 @@
 --   end,
 -- })
 
+local term_fullscreen = false
 local toggle_key = "<A-\\>"  -- Alt/Meta + comma
 return {
   "coder/claudecode.nvim",
@@ -47,7 +48,7 @@ return {
       },
       snacks_win_opts = {
         -- position = "float",
-        -- width = 0.9,
+        -- width = 0.4,
         -- height = 0.9,
         keys = {
           claude_hide = {
@@ -58,6 +59,36 @@ return {
             mode = "t",
             desc = "Hide",
           },
+          -- toggle_fullscreen = {
+          --   "<A-z>",
+          --   function(self)
+          --     term_fullscreen = not term_fullscreen
+          --     if term_fullscreen then
+          --       vim.api.nvim_win_set_config(self.win, {
+          --         relative = "editor",
+          --         width = vim.o.columns,
+          --         height = vim.o.lines - 1,
+          --         row = 0,
+          --         col = 0,
+          --       })
+          --     else
+          --       local width = math.floor(vim.o.columns * 0.4)
+          --       local height = vim.o.lines - 1
+          --       vim.api.nvim_win_set_config(self.win, {
+          --         relative = "editor",
+          --         width = width,
+          --         height = height,
+          --         row = 0,
+          --         col = vim.o.columns - width,
+          --       })
+          --     end
+          --     vim.defer_fn(function()
+          --       vim.cmd('redraw!')
+          --     end, 10)
+          --   end,
+          --   mode = "t",
+          --   desc = "Toggle Terminal Fullscreen"
+          -- },
         },
       },
     },

@@ -465,6 +465,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     local function show_opened_file_history()
       builtin.oldfiles {
         only_cwd = true,
+        previewer = vim.o.columns >= 215,
         file_sorter = require('telescope.sorters').fuzzy_with_index_bias,
         prompt_title = 'Files opened history',
         prompt_prefix = '󱋢 > ',
@@ -507,6 +508,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       builtin.buffers {
         prompt_title = 'Files opened',
         prompt_prefix = ' > ',
+        previewer = vim.o.columns >= 215,
       }
     end, { desc = 'Find Opened Files' })
 
@@ -625,12 +627,31 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       local full_path = cwd .. "/" .. dir.name
       if dir_exists(full_path) then
         vim.keymap.set("n", dir.key, function()
+          local actions = require('telescope.actions')
           builtin.find_files {
             cwd = cwd,
             previewer = false,
             prompt_prefix = dir.prefix,
             prompt_title = dir.title,
             search_dirs = { dir.name },
+            attach_mappings = function(prompt_bufnr, map)
+              local action_state = require('telescope.actions.state')
+              actions.select_default:replace(function()
+                local entry = action_state.get_selected_entry()
+                actions.close(prompt_bufnr)
+                local filepath = entry.path or entry.filename
+                local tabs = vim.api.nvim_list_tabpages()
+                if #tabs >= 2 then
+                  -- Open in the second tab
+                  vim.api.nvim_set_current_tabpage(tabs[2])
+                  vim.cmd('edit ' .. vim.fn.fnameescape(filepath))
+                else
+                  -- Only one tab, create a new one
+                  vim.cmd('tabnew ' .. vim.fn.fnameescape(filepath))
+                end
+              end)
+              return true
+            end,
           }
         end, { desc = dir.desc })
       end

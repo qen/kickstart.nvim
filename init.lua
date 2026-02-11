@@ -294,9 +294,57 @@ vim.opt.rtp:prepend(lazypath)
 vim.keymap.set('n', '<c-n><c-n>', ':e <C-R>=fnamemodify(@%, ":h")<CR>/', { desc = 'Open current buffer file' })
 vim.keymap.set('n', '<c-n><c-o>', ':e<space>', { desc = 'Open file' })
 
+-- Track buffers opened per tab
+vim.api.nvim_create_autocmd('BufWinEnter', {
+  callback = function()
+    local tab = vim.api.nvim_get_current_tabpage()
+    local buf = vim.api.nvim_get_current_buf()
+    if vim.bo[buf].buflisted then
+      local tab_bufs = vim.t[tab].tab_buffers or {}
+      -- Add buf if not already tracked
+      for _, b in ipairs(tab_bufs) do
+        if b == buf then return end
+      end
+      table.insert(tab_bufs, buf)
+      vim.t[tab].tab_buffers = tab_bufs
+    end
+  end,
+})
+
+local function cycle_tab_buffer(direction)
+  -- Single tab: use global buffer navigation
+  if #vim.api.nvim_list_tabpages() <= 1 then
+    vim.cmd(direction == 'next' and 'bn!' or 'bp!')
+    return
+  end
+
+  local tab = vim.api.nvim_get_current_tabpage()
+  local tab_bufs = vim.t[tab].tab_buffers or {}
+  -- Filter out invalid/unlisted buffers
+  tab_bufs = vim.tbl_filter(function(b)
+    return vim.api.nvim_buf_is_valid(b) and vim.bo[b].buflisted
+  end, tab_bufs)
+  vim.t[tab].tab_buffers = tab_bufs
+
+  if #tab_bufs <= 1 then return end
+
+  local cur = vim.api.nvim_get_current_buf()
+  local idx = 1
+  for i, b in ipairs(tab_bufs) do
+    if b == cur then idx = i break end
+  end
+
+  if direction == 'next' then
+    idx = idx % #tab_bufs + 1
+  else
+    idx = (idx - 2) % #tab_bufs + 1
+  end
+  vim.api.nvim_set_current_buf(tab_bufs[idx])
+end
+
 vim.keymap.set('n', '<Tab>q', ':bd!<CR>', { desc = 'Close current open buffer' })
-vim.keymap.set('n', '<Tab>l', ':bn!<CR>', { desc = 'Next buffer' })
-vim.keymap.set('n', '<Tab>h', ':bp!<CR>', { desc = 'Previous buffer' })
+vim.keymap.set('n', '<Tab>l', function() cycle_tab_buffer('next') end, { desc = 'Next buffer (tab-scoped)' })
+vim.keymap.set('n', '<Tab>h', function() cycle_tab_buffer('prev') end, { desc = 'Previous buffer (tab-scoped)' })
 
 -- Copy full path filename with path to clipboard
 vim.keymap.set('n', '<F7>', ':let @*=expand("%")<CR>', { desc = 'Copy file path to clipboard' })

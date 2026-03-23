@@ -28,23 +28,35 @@
 
 -- local term_fullscreen = false
 local toggle_key = "<A-\\>"  -- Alt/Meta + comma
+
+-- local claude_terminal_cmd = string.format("CLAUDE_CONFIG_DIR=%s claude", os.getenv("CLAUDE_CONFIG_DIR") or "~/.claude")
+-- local claude_terminal_cmd = 'CLAUDE_CONFIG_DIR=~/.claude-personal claude'
+
 return {
   "coder/claudecode.nvim",
   enabled = true,
   event = 'VeryLazy',
   dependencies = { "folke/snacks.nvim" },
   opts = {
-    terminal_cmd = "claude", -- Point to local installation
+    terminal_cmd = 'claude', -- Point to local installation
     diff_opts = {
       -- enabled = false,
       -- open_in_new_tab = true,
-      -- hide_terminal_in_new_tab = true,
+      hide_terminal_in_new_tab = false,
     },
     terminal = {
       provider = "external",
       provider_opts = {
-        external_terminal_cmd = "tmux split-window -h -l 40%% %s",
+        -- external_terminal_cmd = "tmux split-window -h -l 40%% %s",
         -- external_terminal_cmd = "tmux split-window %s",
+        external_terminal_cmd = function(cmd, env)
+          local config_dir = os.getenv("CLAUDE_CONFIG_DIR")
+          -- local config_dir = vim.fn.getenv("CLAUDE_CONFIG_DIR")
+          if config_dir ~= nil then
+            return string.format("tmux split-window -h -l 40%% env CLAUDE_CONFIG_DIR=%s %s", config_dir, cmd)
+          end
+          return string.format("tmux split-window -h -l 40%% %s", cmd)
+        end,
       },
       snacks_win_opts = {
         -- position = "float",
@@ -60,36 +72,6 @@ return {
             mode = "t",
             desc = "Hide",
           },
-          -- toggle_fullscreen = {
-          --   "<A-z>",
-          --   function(self)
-          --     term_fullscreen = not term_fullscreen
-          --     if term_fullscreen then
-          --       vim.api.nvim_win_set_config(self.win, {
-          --         relative = "editor",
-          --         width = vim.o.columns,
-          --         height = vim.o.lines - 1,
-          --         row = 0,
-          --         col = 0,
-          --       })
-          --     else
-          --       local width = math.floor(vim.o.columns * 0.4)
-          --       local height = vim.o.lines - 1
-          --       vim.api.nvim_win_set_config(self.win, {
-          --         relative = "editor",
-          --         width = width,
-          --         height = height,
-          --         row = 0,
-          --         col = vim.o.columns - width,
-          --       })
-          --     end
-          --     vim.defer_fn(function()
-          --       vim.cmd('redraw!')
-          --     end, 10)
-          --   end,
-          --   mode = "t",
-          --   desc = "Toggle Terminal Fullscreen"
-          -- },
         },
       },
     },

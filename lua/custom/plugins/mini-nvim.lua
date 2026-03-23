@@ -25,6 +25,8 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
 
     vim.api.nvim_set_hl(0, 'MiniStatuslineGitDirty', { fg = colors.red, bg = 'NONE', bold = true })
 
+    vim.api.nvim_set_hl(0, 'MiniStatuslineClaude', { fg = colors.orange, bg = 'NONE', bold = true })
+
     local function smart_colored_path(max_pct_width, sep_icon, filename_color)
       local filepath = vim.fn.expand '%'
       if filepath == '' then
@@ -120,6 +122,14 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
         string.format('%%#%s# %s', 'MiniStatuslineGitBranch', git_branch),
         icon ~= '' and string.format('%%#%s# %s', icon_hl, icon) or ''
       )
+    end
+
+    local function status_claude()
+      local ok, claudecode = pcall(require, 'claudecode')
+      if not ok or not claudecode.is_claude_connected() then
+        return ''
+      end
+      return string.format('%%#%s# 󱙺 ', 'MiniStatuslineClaude')
     end
 
     local function build_winbar(is_active)
@@ -220,6 +230,7 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
           return MiniStatusline.combine_groups {
             { hl = mode_hl, strings = { mode } },
             '%<', -- Mark general truncate point
+            status_claude(),
             status_git_file_status(),
             -- { hl = 'MiniWinbarFilename', strings = { filename } },
             '%=', -- End left alignment

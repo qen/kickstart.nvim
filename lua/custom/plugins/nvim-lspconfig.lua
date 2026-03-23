@@ -3,6 +3,7 @@
 --
 -- See the kickstart.nvim README for more information
 -- NOTE: LSP Plugins
+vim.lsp.set_log_level('WARN')
 return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language server
   'neovim/nvim-lspconfig',
   dependencies = {
@@ -33,6 +34,7 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
     },
   },
   config = function()
+
     -- === LspAttach helpers and keymaps (unchanged) ===
     vim.api.nvim_create_autocmd('LspAttach', {
       group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
@@ -195,6 +197,36 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
     if vim.g.run_ruby_lsp then
       vim.lsp.enable('ruby_lsp')
     end
+
+    -- Detach ruby_lsp in diff/merge buffers to avoid Prism parse errors on conflict markers
+    vim.api.nvim_create_autocmd('LspAttach', {
+      group = vim.api.nvim_create_augroup('ruby-lsp-no-merge', { clear = true }),
+      callback = function(args)
+        local client = vim.lsp.get_client_by_id(args.data.client_id)
+        if not client or client.name ~= 'ruby_lsp' then
+          return
+        end
+
+        -- diff mode (git mergetool / fugitive 3-way merge)
+        if vim.wo.diff then
+          vim.schedule(function()
+            vim.lsp.buf_detach_client(args.buf, client.id)
+          end)
+          return
+        end
+
+        -- buffer has conflict markers
+        local lines = vim.api.nvim_buf_get_lines(args.buf, 0, 100, false)
+        for _, line in ipairs(lines) do
+          if line:match('^<<<<<<<') then
+            vim.schedule(function()
+              vim.lsp.buf_detach_client(args.buf, client.id)
+            end)
+            return
+          end
+        end
+      end,
+    })
   end
 }
 

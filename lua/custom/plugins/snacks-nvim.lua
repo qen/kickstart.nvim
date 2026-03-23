@@ -1,14 +1,23 @@
-vim.keymap.set('t', '<A-Escape>', "<C-\\><C-N>", { desc = 'Escape terminal mode', noremap = true, silent = true })
+vim.keymap.set('t', '<A-Escape>', '<C-\\><C-N>', { desc = 'Escape terminal mode', noremap = true, silent = true })
+vim.keymap.set('t', '<C-u>', '<C-\\><C-n><C-u>', { desc = 'Scroll up in terminal' })
+vim.keymap.set('t', '<C-d>', '<C-\\><C-n><C-d>', { desc = 'Scroll down in terminal' })
+
+-- vim.keymap.set('t', '<D-v>', function()
+--   local clip = vim.fn.getreg('+')
+--   vim.api.nvim_chan_send(vim.b.terminal_job_id, clip)
+-- end, { noremap = true })
+
 -- vim.keymap.set('t', '<Escape-Escape>', "<C-\\><C-N>", { desc = 'Exit terminal mode', noremap = true, silent = true })
 -- vim.keymap.set('t', '<A-`>', "<C-\\><C-N><C-w>h", { desc = 'move focus to window left', noremap = true, silent = true })
 -- vim.keymap.set('t', '<A-\\>', "<C-\\><C-N><C-w>h<eader>ac", { desc = 'toggle claudecode in terminal', noremap = true, silent = true })
 
 -- vim.keymap.set('n', '<A-1>', ':let @*=expand("%")..":"..line(".")<CR>', { desc = 'Copy file path line number to clipboard' })
+local fidget = require('fidget')
 
 vim.keymap.set('n', '<A-1>', function()
-  local file = vim.fn.expand('%:t')
+  local file = vim.fn.expand("%")
   vim.fn.setreg("+", file)
-  vim.notify('Copy to clipboard: '..file, vim.log.levels.INFO)
+  fidget.notify('', vim.log.levels.INFO, { annote = file })
 end, { desc = 'Copy file path line number to clipboard' })
 
 -- vim.keymap.set('n', '<A-2>', function()
@@ -42,9 +51,9 @@ return {
     -- or leave it empty to use the default settings
     -- refer to the configuration section below
     bigfile = { enabled = true },
-    dashboard = { enabled = true },
+    dashboard = { enabled = false },
     explorer = { enabled = true },
-    indent = { enabled = true },
+    indent = { enabled = false },
     input = { enabled = true },
     picker = { enabled = true },
     notifier = { enabled = true },
@@ -58,6 +67,7 @@ return {
     --   end,
     -- },
     statuscolumn = { enabled = true },
+    image = { enabled = false },
     words = { enabled = true },
     terminal = {},
   },
@@ -129,11 +139,11 @@ return {
                   local buftype = vim.bo[buf].buftype
                   if buftype ~= 'terminal' then
                     local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ':.')
-                    local cursor = vim.api.nvim_win_get_cursor(win)
-                    if vim.fn.fnamemodify(name, ':e') == 'rb' then
+                    if name:match('_spec%.rb$') then
+                      local cursor = vim.api.nvim_win_get_cursor(win)
                       text = 'bundle exec rspec ' .. name .. ':' .. cursor[1]
-                    elseif vim.fn.fnamemodify(name, ':e') == 'js' then
-                      text = 'yarn test' .. name
+                    elseif name:match('test%.js$') then
+                      text = 'yarn test ' .. name
                     else
                       text = name
                     end
@@ -142,7 +152,7 @@ return {
                 end
 
                 vim.fn.setreg("+", text)
-                vim.notify('Copy to clipboard: '..text, vim.log.levels.INFO)
+                fidget.notify('', vim.log.levels.INFO, { annote = text })
               end,
               mode = "t",
               desc = "Copy current file and line to clipboard"
@@ -152,7 +162,7 @@ return {
               function(_self)
                 local branch_name = vim.fn.system('git branch --show-current'):gsub("\n", "")
                 vim.fn.setreg("+", branch_name)
-                vim.notify('Copy to clipboard: '..branch_name, vim.log.levels.INFO)
+                fidget.notify('', vim.log.levels.INFO, { annote = branch_name })
               end,
               mode = "t",
               desc = "Copy current branch to clipboard"
@@ -161,30 +171,30 @@ return {
         },
       })
     end, desc = "Toggle Terminal" },
-    { "<A-r>", function()
-      Snacks.terminal(
-        "bundle exec rails console",
-        {
-          env = { DRACULA_DISPLAY_GIT = "0" },
-          win = {
-            b = { snacks_term_title = 'bundle exec rails console' },
-            position = "bottom",
-            -- width = 0.4,
-            height = 0.4,
-            border = "rounded",
-            title = " Rails Console ",
-            title_pos = "center",
-            keys = {
-              hide = {
-                "<A-r>",
-                function(self) self:hide() end,
-                mode = "t",
-                desc = "Hide Rails Console",
-              },
-            },
-          }
-        }
-      )
-    end, desc = "Rails Console" }
+    -- { "<A-r>", function()
+    --   Snacks.terminal(
+    --     "bundle exec rails console",
+    --     {
+    --       env = { DRACULA_DISPLAY_GIT = "0" },
+    --       win = {
+    --         b = { snacks_term_title = 'bundle exec rails console' },
+    --         position = "bottom",
+    --         -- width = 0.4,
+    --         height = 0.4,
+    --         border = "rounded",
+    --         title = " Rails Console ",
+    --         title_pos = "center",
+    --         keys = {
+    --           hide = {
+    --             "<A-r>",
+    --             function(self) self:hide() end,
+    --             mode = "t",
+    --             desc = "Hide Rails Console",
+    --           },
+    --         },
+    --       }
+    --     }
+    --   )
+    -- end, desc = "Rails Console" }
   }
 }

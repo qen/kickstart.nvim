@@ -235,7 +235,7 @@ end, { desc = "Toggle diagnostics in current buffer" })
 --
 -- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
 -- or just use <C-\><C-n> to exit terminal mode
-vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
+-- vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
 -- TIP: Disable arrow keys in normal mode
 -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
@@ -351,6 +351,7 @@ vim.keymap.set('n', '<F7>', ':let @*=expand("%")<CR>', { desc = 'Copy file path 
 vim.keymap.set('n', '<F8>', ':let @*=expand("%:p")<CR>', { desc = 'Copy full file path to clipboard' })
 
 vim.keymap.set('n', '<C-j>', '<C-^>', { desc = 'jump previous open file', noremap = true, silent = true })
+vim.keymap.set('n', '<C-i>', '<C-i>', { desc = 'Jump forward in jumplist', noremap = true, silent = true })
 
 -- NOTE: Open file opened history if no argument passed
 -- > automatically open two empty tabs
@@ -359,7 +360,23 @@ vim.api.nvim_create_autocmd('VimEnter', {
     local first_arg = vim.fn.argv(0)
     if vim.fn.argc() == 0 then
       vim.schedule(function()
-        require("telescope.builtin").oldfiles({ only_cwd = true })
+        -- require("telescope.builtin").oldfiles({ only_cwd = true })
+        local cwd = vim.fn.getcwd()
+        local loaded = 0
+        local first_buf = nil
+        for _, file in ipairs(vim.v.oldfiles) do
+          if loaded >= 5 then break end
+          if vim.fn.filereadable(file) == 1 and file:sub(1, #cwd) == cwd then
+            local buf = vim.fn.bufadd(file)
+            vim.fn.bufload(buf)
+            vim.bo[buf].buflisted = true
+            if not first_buf then first_buf = buf end
+            loaded = loaded + 1
+          end
+        end
+        if first_buf then
+          vim.api.nvim_set_current_buf(first_buf)
+        end
       end)
       -- vim.cmd("tabnew")  -- Opens a second tab (first is always present by default)
       -- vim.cmd("tabprevious")  -- Opens a second tab (first is always present by default)

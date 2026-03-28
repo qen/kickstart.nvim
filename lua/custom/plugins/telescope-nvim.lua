@@ -297,16 +297,138 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       }
     end
 
-    local function find_files_current_folder(prompt_bufnr)
-      local dir = prompt_dir(prompt_bufnr)
-      actions.close(prompt_bufnr)
+    -- NOTE: find files normal and visual mode
+    local function find_files_with_context(override_dir, override_query)
+      local query = override_query or ''
+      if not override_query and vim.api.nvim_get_mode().mode == 'v' then
+        query = get_visual_selection()
+      end
+
+      local current_file = vim.fn.expand '%'
+      local current_dir = override_dir or vim.fn.fnamemodify(current_file, ':.:h')
+      local current_ext = vim.fn.fnamemodify(current_file, ':e')
+      local top_dir = current_dir ~= '.' and vim.split(current_dir, '/')[1] or nil
+      -- local top_dirs = { 'app', 'packs' }
+      local top_dirs = { 'app' }
+
+      -- Add top-level parent of current dir if not already in the list
+      if top_dir then
+        local exists = false
+        for _, d in ipairs(top_dirs) do
+          if d == top_dir then
+            exists = true
+            break
+          end
+        end
+        if not exists then
+          table.insert(top_dirs, top_dir)
+        end
+      end
+
+      -- Highlight group for current directory files
+      vim.api.nvim_set_hl(0, 'TelescopeCurrentDir', { fg = '#7aa2cc' })
+
+      local make_entry = require('telescope.make_entry')
+      local default_maker = make_entry.gen_from_file()
+
+      local cwd = vim.fn.getcwd() .. '/'
+      local oldfiles = {}
+      for _, f in ipairs(vim.v.oldfiles) do
+        local rel = f:find(cwd, 1, true) == 1 and f:sub(#cwd + 1) or nil
+        if rel then oldfiles[rel] = true end
+      end
+
       builtin.find_files {
         cwd = vim.fn.getcwd(),
         previewer = false,
-        prompt_prefix = ' ' .. dir .. '/',
-        prompt_title = 'Find Files ' .. dir,
-        search_dirs = { dir },
+        default_text = query,
+        prompt_prefix = ' ' .. table.concat(top_dirs, '+') .. '+[current_dir]' .. '/',
+        prompt_title = current_dir .. '/',
+        search_dirs = top_dirs,
+        attach_mappings = function(prompt_bufnr, map)
+          map({ 'i', 'n' }, '<C-g>', function()
+            local current_query = action_state.get_current_line()
+            actions.close(prompt_bufnr)
+            local parent = vim.fn.fnamemodify(current_dir, ':h')
+            if parent == current_dir then return end
+            find_files_with_context(parent, current_query)
+          end)
+          map({ 'i', 'n' }, '<C-r>', function()
+            actions.close(prompt_bufnr)
+            builtin.live_grep {
+              search_dirs = { current_dir },
+              prompt_title = 'Live Grep in ' .. current_dir,
+            }
+          end)
+
+          map({ 'i', 'n' }, '<C-d>', function()
+            actions.close(prompt_bufnr)
+            require('telescope').extensions.file_browser.file_browser {
+              path = current_dir,
+              select_buffer = true,
+              -- theme = 'ivy',
+              prompt_path = true,
+            }
+          end)
+
+          return true
+        end,
+        entry_maker = function(line)
+          local entry = default_maker(line)
+          local original_display = entry.display
+
+          entry.display = function(e)
+            local text, highlights = original_display(e)
+            if current_dir and (e.value:find('^' .. current_dir .. '/') or e.value:find('/' .. current_dir .. '/')) then
+              highlights = highlights or {}
+              local dir_start, dir_end = text:find(current_dir, 1, true)
+              if dir_start then
+                table.insert(highlights, { { dir_start - 1, dir_end }, 'TelescopeCurrentDir' })
+              end
+            end
+            return text, highlights
+          end
+
+          return entry
+        end,
+        sorter = require('telescope.sorters').Sorter:new {
+          scoring_function = function(self, prompt, line)
+            local score = fzy_sorter:scoring_function(prompt, line)
+            if score < 0 then return score end
+
+            -- Highest priority: recently opened files in current directory
+            if current_dir and line and oldfiles[line] and line:find('^' .. current_dir .. '/') then
+              score = score * 0.001
+            end
+
+            -- Second priority: current file's directory (lower score = higher rank)
+            if current_dir and line and line:find('^' .. current_dir .. '/') then
+              score = score * 0.01
+            end
+
+            -- Second priority: same file extension
+            if current_ext and current_ext ~= '' and line and line:match('%.' .. current_ext .. '$') then
+              score = score * 0.1
+            end
+
+            -- Third priority: recently opened files
+            if line and oldfiles[line] then
+              score = score * 0.5
+            end
+
+            return score
+          end,
+          highlighter = function(self, prompt, display)
+            return fzy_sorter:highlighter(prompt, display)
+          end,
+        },
       }
+    end
+
+    local function find_files_current_folder(prompt_bufnr)
+      local dir = prompt_dir(prompt_bufnr)
+      actions.close(prompt_bufnr)
+      find_files_with_context(dir)
     end
 
     local function find_files_cwd(prompt_bufnr)
@@ -333,20 +455,24 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     end
 
     local prioritize_app_folder_sorter = function()
-      return {
-        scoring_function = function(prompt, line)
-          local score = fzy_sorter.scoring_function(prompt, line)
+      local sorters = require('telescope.sorters')
+      return sorters.Sorter:new {
+        scoring_function = function(self, prompt, line)
+          local score = fzy_sorter:scoring_function(prompt, line)
+          if score < 0 then return score end
 
-          -- If file path includes "app/", boost its score
+          -- If file path includes "app/", boost its score (lower = higher rank)
           if line:find '^app/' or line:find '/app/' then
-            score = score + 1500 -- even higher bonus if it's exactly top-level app/
+            score = score * 0.1
           elseif line:find '^vendor/' or line:find '/vendor/' then
-            score = score - 1500
+            score = score * 10
           end
 
           return score
         end,
-        highlighter = fzy_sorter.highlighter,
+        highlighter = function(self, prompt, display)
+          return fzy_sorter:highlighter(prompt, display)
+        end,
       }
     end
 
@@ -413,14 +539,26 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
         old_files = {
           file_sorter = require('telescope.sorters').fuzzy_with_index_bias,
         },
-        -- WARN: not working, can't figure out current direction
-        -- live_grep = {
-        --   mappings = {
-        --     i = {
-        --       ['<C-f>'] = find_files_current_folder,
-        --     },
-        --   },
-        -- },
+        live_grep = {
+          mappings = {
+            i = {
+              ['<C-g>'] = function(prompt_bufnr)
+                local current_query = action_state.get_current_line()
+                local picker = action_state.get_current_picker(prompt_bufnr)
+                local title = picker.prompt_title or ''
+                local dir = title:match('^Live Grep in (.+)$') or vim.fn.fnamemodify(vim.fn.expand '%', ':.:h')
+                actions.close(prompt_bufnr)
+                local parent = vim.fn.fnamemodify(dir, ':h')
+                if parent == dir or parent == '.' then return end
+                builtin.live_grep {
+                  search_dirs = { parent },
+                  default_text = current_query,
+                  prompt_title = 'Live Grep in ' .. parent,
+                }
+              end,
+            },
+          },
+        },
       },
       extensions = {
         ['ui-select'] = {
@@ -555,38 +693,22 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       }
     end, { desc = 'Search [R]ipgrep Word selection' })
 
-    -- NOTE: find files normal and visual mode
-    vim.keymap.set({ 'n', 'v' }, '<leader>ss', function()
-      local query = ''
-      if vim.api.nvim_get_mode().mode == 'v' then
-        query = get_visual_selection()
-      end
+    vim.keymap.set({ 'n', 'v' }, '<leader>ss', find_files_with_context, { desc = 'Search [F]iles in app, packs, and current directories' })
+    vim.keymap.set({ 'n', 'v' }, '<leader>sf', find_files_with_context, { desc = 'Search [F]iles in app, packs, and current directories' })
 
-      local top_dir = get_top_level_dir()
-
-      builtin.find_files {
-        cwd = vim.fn.getcwd(),
-        previewer = false,
-        default_text = query,
-        prompt_prefix = top_dir and ' ' .. top_dir .. '/',
-        prompt_title = top_dir and 'Find Files ' .. top_dir .. '/',
-        search_dirs = top_dir and { top_dir },
-      }
-    end, { desc = 'Search [F]iles in current parent directory folder' })
-
-    vim.keymap.set({ 'n', 'v' }, '<leader>sf', function()
-      local query = ''
-      if vim.api.nvim_get_mode().mode == 'v' then
-        query = get_visual_selection()
-      end
-
-      builtin.find_files {
-        cwd = vim.fn.getcwd(),
-        previewer = false,
-        default_text = query,
-        file_sorter = prioritize_app_folder_sorter(),
-      }
-    end, { desc = 'Search [F]iles in current working directory' })
+    -- NOTE: basic implementation of find_files with visual search
+    -- vim.keymap.set({ 'n', 'v' }, '<leader>sf', function()
+    --   local query = ''
+    --   if vim.api.nvim_get_mode().mode == 'v' then
+    --     query = get_visual_selection()
+    --   end
+    --   builtin.find_files {
+    --     cwd = vim.fn.getcwd(),
+    --     previewer = false,
+    --     default_text = query,
+    --     sorter = prioritize_app_folder_sorter(),
+    --   }
+    -- end, { desc = 'Search [F]iles in current working directory' })
 
     -- -- NOTE: find gist files
     -- vim.keymap.set({ 'n' }, '<leader>sg', function()

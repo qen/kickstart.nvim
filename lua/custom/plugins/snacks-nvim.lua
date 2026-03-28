@@ -14,10 +14,27 @@ vim.keymap.set('t', '<C-d>', '<C-\\><C-n><C-d>', { desc = 'Scroll down in termin
 -- vim.keymap.set('n', '<A-1>', ':let @*=expand("%")..":"..line(".")<CR>', { desc = 'Copy file path line number to clipboard' })
 local fidget = require('fidget')
 
+local _a1_migrate_cycle = 0
+
 vim.keymap.set('n', '<A-1>', function()
-  local file = vim.fn.expand("%")
-  vim.fn.setreg("+", file)
-  fidget.notify('', vim.log.levels.INFO, { annote = file })
+  local file = vim.fn.fnamemodify(vim.fn.expand("%"), ':.')
+  local text
+
+  if file:match('db/migrate/') then
+    if _a1_migrate_cycle == 0 then
+      text = file
+      _a1_migrate_cycle = 1
+    else
+      text = vim.fn.fnamemodify(file, ':t'):match('^(%d+)') or file
+      _a1_migrate_cycle = 0
+    end
+  else
+    text = file
+    _a1_migrate_cycle = 0
+  end
+
+  vim.fn.setreg("+", text)
+  fidget.notify('', vim.log.levels.INFO, { annote = text })
 end, { desc = 'Copy file path line number to clipboard' })
 
 -- vim.keymap.set('n', '<A-2>', function()

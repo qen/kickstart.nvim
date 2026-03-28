@@ -121,6 +121,11 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
       init_options = {
         formatter = "none",
         linters = {},               -- let rubocop-lsp or null-ls do it, or nothing
+        addonSettings = {
+          ["Ruby LSP Rails"] = {
+            enablePendingMigrationsPrompt = false,
+          },
+        },
         enabledFeatures = {         -- only keep what you use
           "codeActions",
           "codeLens",

@@ -206,9 +206,22 @@ return {
 
       -- NOTE: When suffix_priority, pre-filter results via rg glob so only files
       -- containing the query in their filename are returned
+      -- NOTE: Exclude CSS/SCSS unless current file is a frontend file type
+      local frontend_exts = { 'ts', 'tsx', 'js', 'jsx', 'html', 'htm', 'slim', 'haml', 'erb' }
+      local include_styles = vim.tbl_contains(frontend_exts, current_ext)
+
       local find_command = nil
       if suffix_priority and query ~= '' then
         find_command = { 'rg', '--files', '--glob', '*' .. query .. '*' }
+      end
+      if not include_styles then
+        find_command = find_command or { 'rg', '--files' }
+        vim.list_extend(find_command, { '--glob', '!*.css', '--glob', '!*.scss' })
+      end
+
+      -- NOTE: Restrict search to frontend dirs when in a frontend file
+      if include_styles then
+        top_dirs = { 'app', 'jest', 'packs' }
       end
 
       builtin.find_files {
@@ -244,9 +257,14 @@ return {
             }
           end)
           if suffix_priority then
-            map({ 'i', 'n' }, '<C-s>', function()
+            map({ 'i', 'n' }, '<C-Space>', function()
               local current_query = action_state.get_current_line()
               find_files_with_context(current_dir, current_query, false)
+            end)
+          else
+            map({ 'i', 'n' }, '<C-f>', function()
+              local current_query = action_state.get_current_line()
+              find_files_with_context(current_dir, current_query, true)
             end)
           end
           return true
@@ -401,7 +419,7 @@ return {
       }
     end
 
-    -- [[ Configure Telescope ]]
+    -- NOTE: [[ Configure Telescope ]]
     require('telescope').setup {
       defaults = {
         file_sorter = require('telescope.sorters').get_fzy_sorter(),
@@ -457,11 +475,11 @@ return {
           mappings = {
             ['i'] = {
               ['<C-r>'] = ripgrep_current_folder,
-              ['<C-f>'] = find_files_current_folder,
+              ['<C-Space>'] = find_files_current_folder,
             },
             ['n'] = {
               ['<C-r>'] = ripgrep_current_folder,
-              ['<C-f>'] = find_files_current_folder,
+              ['<C-Space>'] = find_files_current_folder,
             },
           },
         },

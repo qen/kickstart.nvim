@@ -15,6 +15,9 @@ local file_name_suffixes = {
   '_service$',
   '_job$',
   '_worker$',
+  '_agent$',
+  '_tool$',
+  '_sub_agent_tool$',
   '_policy$',
   '_spec$',
   '%.test$',
@@ -240,6 +243,12 @@ return {
               prompt_path = true,
             }
           end)
+          if suffix_priority then
+            map({ 'i', 'n' }, '<C-s>', function()
+              local current_query = action_state.get_current_line()
+              find_files_with_context(current_dir, current_query, false)
+            end)
+          end
           return true
         end,
         entry_maker = function(line)
@@ -292,8 +301,9 @@ return {
         end,
         -- NOTE: Custom sorter — lower score = higher rank. Boosts are multiplicative:
         -- 1. Exact base name match (after suffix stripping): * 0.001
-        -- 2. Current dir + oldfile: * 0.001 * recency | current dir only: * 0.01 | oldfile only: * 0.05
-        -- 3. Rails key dirs (models/controllers/views): * 0.2
+        -- 2. Current dir + oldfile: * 0.001 * recency | current dir: * 0.01
+        --    Ancestor dir + oldfile: * 0.02 * recency | ancestor dir: * 0.03 | oldfile only: * 0.05
+        -- 3. Rails key dirs (models/controllers/views), only un-visited non-dir files: * 0.2
         -- 4. Same file extension: * 0.1
         -- 5. Suffix priority (index-based): * 0.0001 to * 0.001
         sorter = require('telescope.sorters').Sorter:new {
@@ -317,7 +327,8 @@ return {
             end
 
             local in_current_dir = current_dir and line and line:find('^' .. current_dir .. '/')
-            local in_line_dir = current_dir and line and current_dir:find('^' .. line .. '/')
+            local file_dir = line and line:match('^(.+)/[^/]+$') or ''
+            local in_line_dir = file_dir ~= '' and current_dir and current_dir:find('^' .. file_dir .. '/') ~= nil
             local oldfile_rank = line and oldfiles[line]
             local is_oldfile = oldfile_rank ~= nil
             local same_ext = current_ext and current_ext ~= '' and line and line:match('%.' .. current_ext .. '$')
@@ -327,14 +338,19 @@ return {
 
             if in_current_dir and is_oldfile then
               score = score * 0.001 * recency
-            elseif in_line_dir then
+            elseif in_current_dir then
               score = score * 0.01
+            elseif in_line_dir and is_oldfile then
+              score = score * 0.02 * recency
+            elseif in_line_dir then
+              score = score * 0.03
             elseif is_oldfile then
               score = score * 0.05
             end
 
-            if not in_line_dir and line and (line:match('models/') or line:match('controllers/') or line:match('views/')) then
-              score = score * 0.2 * recency
+            if not in_current_dir and not in_line_dir and not is_oldfile
+                and line and (line:match('models/') or line:match('controllers/') or line:match('views/')) then
+              score = score * 0.2
             end
 
             if same_ext then
@@ -520,14 +536,14 @@ return {
       }
     end, { desc = 'Search [R]ipgrep Word selection' })
 
-    vim.keymap.set({ 'n', 'v' }, '<leader>ss', find_files_with_context, { desc = 'Search [F]iles in app, packs, and current directories' })
+    vim.keymap.set({ 'n', 'v' }, '<leader><leader>', find_files_with_context, { desc = 'Search [F]iles in app, packs, and current directories' })
 
     vim.keymap.set('n', '<leader>sf', function()
       local query = similar_document_name()
       find_files_with_context(nil, query, true)
     end, { desc = 'Search similar [N]ame on app folders' })
 
-    vim.keymap.set('n', '<leader><leader>', function()
+    vim.keymap.set('n', '<leader>ss', function()
       builtin.current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
         previewer = false,
         layout_config = {

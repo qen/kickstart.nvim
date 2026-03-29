@@ -12,15 +12,18 @@ local function get_visual_selection()
 end
 
 local file_name_suffixes = {
+  '%$',
   '_controller$',
-  '_spec$',
   '_service$',
-  '_policy$',
   '_job$',
   '_worker$',
+  '_policy$',
+  '_spec$',
+  '%.test$',
   '_input$',
   '_type$',
   '_fabricator$',
+  '^app/views$',
 }
 
 local doc_dirs = {
@@ -49,21 +52,24 @@ local doc_dirs = {
 
 -- NOTE: Helper function to similart document name
 local function similar_document_name()
-  local filepath = vim.fn.expand('%:r') -- Get current buffer's full relative path
+  -- local filepath = vim.fn.expand('%:r') -- Get current buffer's full relative path
+  local filename = vim.fn.expand('%:t:r') -- Get current buffer's full relative path
 
   for _, suffix in ipairs(file_name_suffixes) do
-    filepath = filepath:gsub(suffix, '')
+    filename = filename:gsub(suffix, '')
   end
+
+  return filename
 
   -- local parent_filename = filepath:match("^.-/(.+)") -- Remove the first folder (like "app/")
   -- Extract first parent directory and filename
-  local parent, filename = filepath:match("([^/]+)/([^/]+)$") -- matches: "parent/filename"
-
-  if parent and filename then
-    return parent .. "/" .. filename
-  else
-    return filepath -- fallback if pattern match fails
-  end
+  -- local parent, filename = filepath:match("([^/]+)/([^/]+)$") -- matches: "parent/filename"
+  --
+  -- if parent and filename then
+  --   return parent .. "/" .. filename
+  -- else
+  --   return filepath -- fallback if pattern match fails
+  -- end
 end
 
 -- NOTE: Helper function to check if a directory exists
@@ -298,7 +304,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     end
 
     -- NOTE: find files normal and visual mode
-    local function find_files_with_context(override_dir, override_query)
+    local function find_files_with_context(override_dir, override_query, suffix_priority)
       local query = override_query or ''
       if not override_query and vim.api.nvim_get_mode().mode == 'v' then
         query = get_visual_selection()
@@ -309,7 +315,8 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       local current_ext = vim.fn.fnamemodify(current_file, ':e')
       local top_dir = current_dir ~= '.' and vim.split(current_dir, '/')[1] or nil
       -- local top_dirs = { 'app', 'packs' }
-      local top_dirs = { 'app' }
+      local top_dirs = { 'app', 'db', 'spec', 'packs', 'jest' }
+      -- local rails_dirs = { 'app', 'spec', 'db', 'config', 'packs' }
 
       -- Add top-level parent of current dir if not already in the list
       if top_dir then
@@ -327,22 +334,39 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
 
       -- Highlight group for current directory files
       vim.api.nvim_set_hl(0, 'TelescopeCurrentDir', { fg = '#7aa2cc' })
+      vim.api.nvim_set_hl(0, 'TelescopeSuffixMatch', { fg = '#c0976b' })
+      vim.api.nvim_set_hl(0, 'TelescopeQueryBold', { fg = '#c0976b', bold = true })
 
       local make_entry = require('telescope.make_entry')
       local default_maker = make_entry.gen_from_file()
 
       local cwd = vim.fn.getcwd() .. '/'
       local oldfiles = {}
+      local oldfile_count = 0
       for _, f in ipairs(vim.v.oldfiles) do
         local rel = f:find(cwd, 1, true) == 1 and f:sub(#cwd + 1) or nil
-        if rel then oldfiles[rel] = true end
+        if rel then
+          oldfile_count = oldfile_count + 1
+          oldfiles[rel] = oldfile_count
+        end
+      end
+
+      local debug_scores = {}
+      local score_suffix = false -- debug score for sorting
+      local suffix_priority_scores = {}
+
+      local find_command = nil
+      if suffix_priority and query ~= '' then
+        find_command = { 'rg', '--files', '--glob', '*' .. query .. '*' }
       end
 
       builtin.find_files {
         cwd = vim.fn.getcwd(),
         previewer = false,
-        default_text = query,
-        prompt_prefix = ' ' .. table.concat(top_dirs, '+') .. '+[current_dir]' .. '/',
+        default_text = not suffix_priority and query or nil,
+        find_command = find_command,
+        prompt_prefix = ' ' .. current_dir .. '/',
+        -- prompt_prefix = ' [project_dir]/',
         prompt_title = current_dir .. '/',
         search_dirs = top_dirs,
         attach_mappings = function(prompt_bufnr, map)
@@ -351,7 +375,7 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
             actions.close(prompt_bufnr)
             local parent = vim.fn.fnamemodify(current_dir, ':h')
             if parent == current_dir then return end
-            find_files_with_context(parent, current_query)
+            find_files_with_context(parent, current_query, suffix_priority)
           end)
           map({ 'i', 'n' }, '<C-r>', function()
             actions.close(prompt_bufnr)
@@ -386,6 +410,30 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
                 table.insert(highlights, { { dir_start - 1, dir_end }, 'TelescopeCurrentDir' })
               end
             end
+            local score = debug_scores[e.value]
+            if score and score_suffix then
+              text = text .. '  [' .. string.format('%.9f', score) .. ']'
+            end
+
+            if suffix_priority then
+              highlights = highlights or {}
+              local dir = e.value:match('^(.*/)') or ''
+              if dir ~= '' then
+                local dir_start, dir_end = text:find(dir, 1, true)
+                if dir_start then
+                  table.insert(highlights, { { dir_start - 1, dir_end }, 'TelescopeSuffixMatch' })
+                end
+              end
+              if query ~= '' then
+                local q_lower = query:lower()
+                local t_lower = text:lower()
+                local q_start, q_end = t_lower:find(q_lower, 1, true)
+                if q_start then
+                  table.insert(highlights, { { q_start - 1, q_end }, 'TelescopeQueryBold' })
+                end
+              end
+            end
+
             return text, highlights
           end
 
@@ -396,24 +444,62 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
             local score = fzy_sorter:scoring_function(prompt, line)
             if score < 0 then return score end
 
-            -- Highest priority: recently opened files in current directory
-            if current_dir and line and oldfiles[line] and line:find('^' .. current_dir .. '/') then
-              score = score * 0.001
+            -- Exact filename match: strip extension + known suffixes, boost if base equals prompt
+            if prompt ~= '' and line then
+              local filename = line:match('[^/]+$')
+              if filename then
+                local name = filename:match('^(.+)%.') or filename
+                local base = name
+                for _, suffix in ipairs(file_name_suffixes) do
+                  base = base:gsub(suffix, '')
+                end
+                if base:lower() == prompt:lower() then
+                  score = score * 0.001
+                end
+              end
             end
 
-            -- Second priority: current file's directory (lower score = higher rank)
-            if current_dir and line and line:find('^' .. current_dir .. '/') then
+            local in_current_dir = current_dir and line and line:find('^' .. current_dir .. '/')
+            local in_line_dir = current_dir and line and current_dir:find('^' .. line .. '/')
+            local oldfile_rank = line and oldfiles[line]
+            local is_oldfile = oldfile_rank ~= nil
+            local same_ext = current_ext and current_ext ~= '' and line and line:match('%.' .. current_ext .. '$')
+
+            -- Recency factor: rank 1 → 0.1, last rank → 1.0
+            local recency = is_oldfile and (0.1 + 0.9 * (oldfile_rank - 1) / math.max(oldfile_count - 1, 1)) or 1
+
+            if in_current_dir and is_oldfile then
+              score = score * 0.001 * recency
+            elseif in_line_dir then
               score = score * 0.01
+            elseif is_oldfile then
+              score = score * 0.05
             end
 
-            -- Second priority: same file extension
-            if current_ext and current_ext ~= '' and line and line:match('%.' .. current_ext .. '$') then
+            if not in_line_dir and line and (line:match('models/') or line:match('controllers/') or line:match('views/')) then
+              score = score * 0.2 * recency
+            end
+
+            if same_ext then
               score = score * 0.1
             end
 
-            -- Third priority: recently opened files
-            if line and oldfiles[line] then
-              score = score * 0.5
+            if suffix_priority and line then
+              local filename = line:match('[^/]+$')
+              if filename then
+                local name = filename:match('^(.+)%.')  or filename
+                for i, suffix in ipairs(file_name_suffixes) do
+                  if name:match(suffix) then
+                    score = score * (0.0001 + 0.0009 * (i - 1) / math.max(#file_name_suffixes - 1, 1))
+                    suffix_priority_scores[line] = score
+                    break
+                  end
+                end
+              end
+            end
+
+            if score_suffix then
+              debug_scores[line] = score
             end
 
             return score
@@ -631,17 +717,6 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
       }
     end, { desc = 'Search Browse <c[w]d>irectory' })
 
-    vim.keymap.set('n', '<leader>sn', function()
-      local query = similar_document_name()
-      builtin.find_files {
-        cwd = vim.fn.getcwd(),
-        previewer = false,
-        default_text = query,
-        prompt_title = '󰈞 similar name to > ' .. query,
-        prompt_prefix = '󰈞 > ',
-      }
-    end, { desc = 'Search similar [N]ame on app folders' })
-
     vim.keymap.set('n', '<TAB>o', function()
       builtin.buffers {
         prompt_title = 'Files opened',
@@ -694,7 +769,28 @@ return { -- telescope: Fuzzy Finder (files, lsp, etc)
     end, { desc = 'Search [R]ipgrep Word selection' })
 
     vim.keymap.set({ 'n', 'v' }, '<leader>ss', find_files_with_context, { desc = 'Search [F]iles in app, packs, and current directories' })
-    vim.keymap.set({ 'n', 'v' }, '<leader>sf', find_files_with_context, { desc = 'Search [F]iles in app, packs, and current directories' })
+    -- vim.keymap.set({ 'n', 'v' }, '<leader>sf', find_files_with_context, { desc = 'Search [F]iles in app, packs, and current directories' })
+    vim.keymap.set('n', '<leader>sf', function()
+      local query = similar_document_name()
+      find_files_with_context(nil, query, true)
+    end, { desc = 'Search similar [N]ame on app folders' })
+
+    -- vim.keymap.set({ 'n', 'v' }, '<leader>sf', function()
+    --   local query = ''
+    --   if vim.api.nvim_get_mode().mode == 'v' then
+    --     query = get_visual_selection()
+    --   end
+    --   local rails_dirs = { 'app', 'spec', 'db', 'config' }
+    --   builtin.find_files {
+    --     cwd = vim.fn.getcwd(),
+    --     previewer = false,
+    --     default_text = query,
+    --     prompt_prefix = ' rails/',
+    --     prompt_title = 'Find Rails Files',
+    --     search_dirs = rails_dirs,
+    --     sorter = prioritize_app_folder_sorter(),
+    --   }
+    -- end, { desc = 'Search Rails [F]iles' })
 
     -- NOTE: basic implementation of find_files with visual search
     -- vim.keymap.set({ 'n', 'v' }, '<leader>sf', function()

@@ -2,6 +2,7 @@
 
 ## System requirements
 
+- brew install fd
 - brew install ripgrep
 - brew install ag
 - brew install jq

@@ -154,6 +154,114 @@ return {
     vim.api.nvim_set_hl(0, 'TelescopeSuffixMatch', { fg = '#c0976b' })
     vim.api.nvim_set_hl(0, 'TelescopeQueryBold', { fg = '#c0976b', bold = true })
 
+    -- NOTE: Factory for context-aware sorter — lower score = higher rank. Boosts are multiplicative:
+    -- 1. Exact base name match (after suffix stripping): * 0.001
+    -- 2. Current dir + oldfile: * 0.001 * recency | current dir: * 0.01
+    --    Ancestor dir + oldfile: * 0.02 * recency | ancestor dir: * 0.03 | oldfile only: * 0.05
+    -- 3. Rails key dirs (models/controllers/views), only un-visited non-dir files: * 0.2
+    -- 4. Same file extension: * 0.1
+    -- 5. Suffix priority (index-based): * 0.0001 to * 0.001
+    local function make_context_sorter(opts)
+      opts = opts or {}
+      local current_file = vim.fn.expand '%'
+      local current_dir = opts.current_dir or vim.fn.fnamemodify(current_file, ':.:h')
+      local current_ext = opts.current_ext or vim.fn.fnamemodify(current_file, ':e')
+      local suffix_priority = opts.suffix_priority or false
+
+      local cwd = vim.fn.getcwd() .. '/'
+      local oldfiles_map = {}
+      local oldfile_count = 0
+      for _, f in ipairs(vim.v.oldfiles) do
+        local rel = f:find(cwd, 1, true) == 1 and f:sub(#cwd + 1) or nil
+        if rel then
+          oldfile_count = oldfile_count + 1
+          oldfiles_map[rel] = oldfile_count
+        end
+      end
+
+      local debug_scores = {}
+      local score_suffix = false
+      local suffix_priority_scores = {}
+
+      local sorter = require('telescope.sorters').Sorter:new {
+        scoring_function = function(self, prompt, line)
+          local score = fzy_sorter:scoring_function(prompt, line)
+          if score < 0 then return score end
+
+          -- Exact filename match: strip extension + known suffixes, boost if base equals prompt
+          if prompt ~= '' and line then
+            local filename = line:match('[^/]+$')
+            if filename then
+              local name = filename:match('^(.+)%.') or filename
+              local base = name
+              for _, suffix in ipairs(file_name_suffixes) do
+                base = base:gsub(suffix, '')
+              end
+              if base:lower() == prompt:lower() then
+                score = score * 0.001
+              end
+            end
+          end
+
+          local in_current_dir = current_dir and line and line:find('^' .. current_dir .. '/')
+          local file_dir = line and line:match('^(.+)/[^/]+$') or ''
+          local in_line_dir = file_dir ~= '' and current_dir and current_dir:find('^' .. file_dir .. '/') ~= nil
+          local oldfile_rank = line and oldfiles_map[line]
+          local is_oldfile = oldfile_rank ~= nil
+          local same_ext = current_ext and current_ext ~= '' and line and line:match('%.' .. current_ext .. '$')
+
+          -- Recency factor: rank 1 -> 0.1, last rank -> 1.0
+          local recency = is_oldfile and (0.1 + 0.9 * (oldfile_rank - 1) / math.max(oldfile_count - 1, 1)) or 1
+
+          if in_current_dir and is_oldfile then
+            score = score * 0.001 * recency
+          elseif in_current_dir then
+            score = score * 0.01
+          elseif in_line_dir and is_oldfile then
+            score = score * 0.02 * recency
+          elseif in_line_dir then
+            score = score * 0.03
+          elseif is_oldfile then
+            score = score * 0.05
+          end
+
+          if not in_current_dir and not in_line_dir and not is_oldfile
+              and line and (line:match('models/') or line:match('controllers/') or line:match('views/')) then
+            score = score * 0.2
+          end
+
+          if same_ext then
+            score = score * 0.1
+          end
+
+          if suffix_priority and line then
+            local filename = line:match('[^/]+$')
+            if filename then
+              local name = filename:match('^(.+)%.') or filename
+              for i, suffix in ipairs(file_name_suffixes) do
+                if name:match(suffix) then
+                  score = score * (0.0001 + 0.0009 * (i - 1) / math.max(#file_name_suffixes - 1, 1))
+                  suffix_priority_scores[line] = score
+                  break
+                end
+              end
+            end
+          end
+
+          if score_suffix then
+            debug_scores[line] = score
+          end
+
+          return score
+        end,
+        highlighter = function(self, prompt, display)
+          return fzy_sorter:highlighter(prompt, display)
+        end,
+      }
+
+      return sorter, debug_scores, score_suffix, suffix_priority_scores
+    end
+
     -- NOTE: Main find_files function with custom scoring
     -- override_dir: restrict search to a specific directory
     -- override_query: pre-fill the search query
@@ -169,7 +277,7 @@ return {
       local current_dir = override_dir or vim.fn.fnamemodify(current_file, ':.:h')
       local current_ext = vim.fn.fnamemodify(current_file, ':e')
       local top_dir = current_dir ~= '.' and vim.split(current_dir, '/')[1] or nil
-      local top_dirs = { 'app', 'db', 'spec', 'packs', 'jest' }
+      local top_dirs = (suffix_priority and query ~= '') and { 'app', 'db', 'spec', 'packs', 'jest' } or { 'app', 'packs' }
 
       -- Add top-level parent of current dir if not already in the list
       if top_dir then
@@ -188,22 +296,6 @@ return {
       local make_entry = require('telescope.make_entry')
       local default_maker = make_entry.gen_from_file()
 
-      local cwd = vim.fn.getcwd() .. '/'
-      -- NOTE: Build oldfiles lookup with recency rank (1 = most recent) for scoring
-      local oldfiles = {}
-      local oldfile_count = 0
-      for _, f in ipairs(vim.v.oldfiles) do
-        local rel = f:find(cwd, 1, true) == 1 and f:sub(#cwd + 1) or nil
-        if rel then
-          oldfile_count = oldfile_count + 1
-          oldfiles[rel] = oldfile_count
-        end
-      end
-
-      local debug_scores = {}
-      local score_suffix = false
-      local suffix_priority_scores = {}
-
       -- NOTE: When suffix_priority, pre-filter results via rg glob so only files
       -- containing the query in their filename are returned
       -- NOTE: Exclude CSS/SCSS unless current file is a frontend file type
@@ -217,12 +309,21 @@ return {
       if not include_styles then
         find_command = find_command or { 'rg', '--files' }
         vim.list_extend(find_command, { '--glob', '!*.css', '--glob', '!*.scss' })
+      else
+        find_command = find_command or { 'rg', '--files' }
+        vim.list_extend(find_command, { '--glob', '!*.html', '--glob', '!*.htm', '--glob', '!*.slim', '--glob', '!*.haml', '--glob', '!*.erb' })
       end
 
       -- NOTE: Restrict search to frontend dirs when in a frontend file
       if include_styles then
         top_dirs = { 'app', 'jest', 'packs' }
       end
+
+      local sorter, debug_scores, score_suffix, suffix_priority_scores = make_context_sorter({
+        current_dir = current_dir,
+        current_ext = current_ext,
+        suffix_priority = suffix_priority,
+      })
 
       builtin.find_files {
         cwd = vim.fn.getcwd(),
@@ -317,88 +418,7 @@ return {
 
           return entry
         end,
-        -- NOTE: Custom sorter — lower score = higher rank. Boosts are multiplicative:
-        -- 1. Exact base name match (after suffix stripping): * 0.001
-        -- 2. Current dir + oldfile: * 0.001 * recency | current dir: * 0.01
-        --    Ancestor dir + oldfile: * 0.02 * recency | ancestor dir: * 0.03 | oldfile only: * 0.05
-        -- 3. Rails key dirs (models/controllers/views), only un-visited non-dir files: * 0.2
-        -- 4. Same file extension: * 0.1
-        -- 5. Suffix priority (index-based): * 0.0001 to * 0.001
-        sorter = require('telescope.sorters').Sorter:new {
-          scoring_function = function(self, prompt, line)
-            local score = fzy_sorter:scoring_function(prompt, line)
-            if score < 0 then return score end
-
-            -- Exact filename match: strip extension + known suffixes, boost if base equals prompt
-            if prompt ~= '' and line then
-              local filename = line:match('[^/]+$')
-              if filename then
-                local name = filename:match('^(.+)%.') or filename
-                local base = name
-                for _, suffix in ipairs(file_name_suffixes) do
-                  base = base:gsub(suffix, '')
-                end
-                if base:lower() == prompt:lower() then
-                  score = score * 0.001
-                end
-              end
-            end
-
-            local in_current_dir = current_dir and line and line:find('^' .. current_dir .. '/')
-            local file_dir = line and line:match('^(.+)/[^/]+$') or ''
-            local in_line_dir = file_dir ~= '' and current_dir and current_dir:find('^' .. file_dir .. '/') ~= nil
-            local oldfile_rank = line and oldfiles[line]
-            local is_oldfile = oldfile_rank ~= nil
-            local same_ext = current_ext and current_ext ~= '' and line and line:match('%.' .. current_ext .. '$')
-
-            -- Recency factor: rank 1 -> 0.1, last rank -> 1.0
-            local recency = is_oldfile and (0.1 + 0.9 * (oldfile_rank - 1) / math.max(oldfile_count - 1, 1)) or 1
-
-            if in_current_dir and is_oldfile then
-              score = score * 0.001 * recency
-            elseif in_current_dir then
-              score = score * 0.01
-            elseif in_line_dir and is_oldfile then
-              score = score * 0.02 * recency
-            elseif in_line_dir then
-              score = score * 0.03
-            elseif is_oldfile then
-              score = score * 0.05
-            end
-
-            if not in_current_dir and not in_line_dir and not is_oldfile
-                and line and (line:match('models/') or line:match('controllers/') or line:match('views/')) then
-              score = score * 0.2
-            end
-
-            if same_ext then
-              score = score * 0.1
-            end
-
-            if suffix_priority and line then
-              local filename = line:match('[^/]+$')
-              if filename then
-                local name = filename:match('^(.+)%.') or filename
-                for i, suffix in ipairs(file_name_suffixes) do
-                  if name:match(suffix) then
-                    score = score * (0.0001 + 0.0009 * (i - 1) / math.max(#file_name_suffixes - 1, 1))
-                    suffix_priority_scores[line] = score
-                    break
-                  end
-                end
-              end
-            end
-
-            if score_suffix then
-              debug_scores[line] = score
-            end
-
-            return score
-          end,
-          highlighter = function(self, prompt, display)
-            return fzy_sorter:highlighter(prompt, display)
-          end,
-        },
+        sorter = sorter,
       }
     end
 
@@ -506,7 +526,7 @@ return {
       builtin.oldfiles {
         only_cwd = true,
         previewer = vim.o.columns >= 215,
-        file_sorter = require('telescope.sorters').fuzzy_with_index_bias,
+        sorter = make_context_sorter(),
         prompt_title = 'Files opened history',
         prompt_prefix = '󱋢 > ',
       }

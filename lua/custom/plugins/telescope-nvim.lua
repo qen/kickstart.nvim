@@ -267,11 +267,14 @@ return {
     -- override_query: pre-fill the search query
     -- suffix_priority: when true, pre-filters files via rg glob, scores by file_name_suffixes order,
     --                  highlights directories and bolds the query match in results
-    local function find_files_with_context(override_dir, override_query, suffix_priority)
+    local function find_files_with_context(override_dir, override_query, suffix_priority, override_top_dir)
       local query = override_query or ''
+
       if not override_query and vim.api.nvim_get_mode().mode == 'v' then
         query = get_visual_selection()
       end
+
+      local vquery = vim.api.nvim_get_mode().mode == 'v' and get_visual_selection() or nil
 
       local current_file = vim.fn.expand '%'
       local current_dir = override_dir or vim.fn.fnamemodify(current_file, ':.:h')
@@ -325,10 +328,14 @@ return {
         suffix_priority = suffix_priority,
       })
 
+      if override_top_dir then
+        top_dirs = { override_top_dir }
+      end
+
       builtin.find_files {
         cwd = vim.fn.getcwd(),
         previewer = false,
-        default_text = not suffix_priority and query or nil,
+        default_text = not suffix_priority and query or vquery,
         find_command = find_command,
         prompt_prefix = (suffix_priority and query and '['..query..'] ' or ' ') .. current_dir .. '/',
         prompt_title = current_dir .. '/',
@@ -340,7 +347,7 @@ return {
             actions.close(prompt_bufnr)
             local parent = vim.fn.fnamemodify(current_dir, ':h')
             if parent == current_dir then return end
-            find_files_with_context(parent, suffix_priority and query or current_query, suffix_priority)
+            find_files_with_context(parent, suffix_priority and query or current_query, suffix_priority, current_dir)
           end)
           map({ 'i', 'n' }, '<C-r>', function()
             actions.close(prompt_bufnr)
@@ -356,16 +363,19 @@ return {
               select_buffer = true,
               prompt_path = true,
             }
+            -- find_files_with_context(nil, nil, nil, current_dir)
           end)
           if suffix_priority then
             map({ 'i', 'n' }, '<C-Space>', function()
-              local current_query = action_state.get_current_line()
-              find_files_with_context(current_dir, current_query, false)
+              -- local current_query = action_state.get_current_line()
+              find_files_with_context(current_dir, query, false)
             end)
           else
             map({ 'i', 'n' }, '<C-f>', function()
               local current_query = action_state.get_current_line()
-              find_files_with_context(current_dir, current_query, true)
+              if current_query and current_query ~= '' then
+                find_files_with_context(current_dir, current_query, true)
+              end
             end)
           end
           return true
@@ -428,16 +438,35 @@ return {
       find_files_with_context(dir)
     end
 
-    local function find_files_cwd(prompt_bufnr)
-      actions.close(prompt_bufnr)
-      local cwd = vim.fn.getcwd()
-      builtin.find_files {
-        cwd = cwd,
-        previewer = false,
-        prompt_prefix = ' /',
-        prompt_title = 'Find Files',
-      }
-    end
+    -- local function find_files_cwd(prompt_bufnr)
+    --   actions.close(prompt_bufnr)
+    --   local cwd = vim.fn.getcwd()
+    --   builtin.find_files {
+    --     cwd = cwd,
+    --     previewer = false,
+    --     prompt_prefix = ' /',
+    --     prompt_title = 'Find Files',
+    --   }
+    -- end
+
+    -- local function find_files_parent_dir(current_dir)
+    --   builtin.find_files {
+    --     cwd = current_dir,
+    --     previewer = false,
+    --     prompt_prefix = './' .. current_dir .. '/',
+    --     prompt_title = current_dir,
+    --     attach_mappings = function(prompt_bufnr, map)
+    --       -- C-g navigates up to parent dir
+    --       map({ 'i', 'n' }, '<C-g>', function()
+    --         actions.close(prompt_bufnr)
+    --         local parent = vim.fn.fnamemodify(current_dir, ':h')
+    --         if parent == current_dir then return end
+    --         find_files_with_context(parent)
+    --       end)
+    --       return true
+    --     end
+    --   }
+    -- end
 
     -- NOTE: [[ Configure Telescope ]]
     require('telescope').setup {
@@ -456,10 +485,13 @@ return {
       },
       pickers = {
         find_files = {
-          mappings = {
-            n = { ['<C-g>'] = find_files_cwd },
-            i = { ['<C-g>'] = find_files_cwd },
-          },
+          -- mappings = {
+          --   n = { ['<C-g>'] = find_files_parent_dir },
+          --   i = {
+          --     ['<C-g>'] = find_files_parent_dir,
+          --     ['<C-Space>'] = find_files_current_folder,
+          --   },
+          -- },
         },
         old_files = {
           file_sorter = require('telescope.sorters').fuzzy_with_index_bias,
@@ -496,6 +528,11 @@ return {
             ['i'] = {
               ['<C-r>'] = ripgrep_current_folder,
               ['<C-Space>'] = find_files_current_folder,
+              ['<C-f>'] = function(prompt_bufnr)
+                local dir = prompt_dir(prompt_bufnr)
+                actions.close(prompt_bufnr)
+                find_files_with_context(nil, nil, nil, dir)
+              end
             },
             ['n'] = {
               ['<C-r>'] = ripgrep_current_folder,
@@ -554,6 +591,7 @@ return {
     vim.keymap.set('n', '<leader>sw', function()
       require('telescope').extensions.file_browser.file_browser {
         prompt_path = true,
+        respect_gitignore = false
       }
     end, { desc = 'Search Browse <c[w]d>irectory' })
 
@@ -576,8 +614,10 @@ return {
 
     vim.keymap.set({ 'n', 'v' }, '<leader><leader>', find_files_with_context, { desc = 'Search [F]iles in app, packs, and current directories' })
 
-    vim.keymap.set('n', '<leader>sf', function()
+    vim.keymap.set({ 'n', 'v' }, '<leader>sf', function()
+      -- local query = vim.api.nvim_get_mode().mode == 'v' and get_visual_selection() or similar_document_name()
       local query = similar_document_name()
+
       find_files_with_context(nil, query, true)
     end, { desc = 'Search similar [N]ame on app folders' })
 

@@ -1,6 +1,17 @@
-vim.keymap.set('t', '<A-Escape>', '<C-\\><C-N>', { desc = 'Escape terminal mode', noremap = true, silent = true })
+-- vim.keymap.set('t', '<A-Escape>', '<C-\\><C-N>', { desc = 'Escape terminal mode', noremap = true, silent = true })
 vim.keymap.set('t', '<C-u>', '<C-\\><C-n><C-u>', { desc = 'Scroll up in terminal' })
 vim.keymap.set('t', '<C-d>', '<C-\\><C-n><C-d>', { desc = 'Scroll down in terminal' })
+vim.keymap.set('n', '<A-ESC>', function()
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if vim.bo[vim.api.nvim_win_get_buf(win)].buftype == 'terminal' then
+      vim.api.nvim_set_current_win(win)
+      vim.cmd('startinsert')
+      return
+    end
+  end
+end, { desc = 'Switch to terminal window' })
+
+-- vim.keymap.set('t', '<C-w>', '<C-\\><C-n><C-w>', { desc = 'Focus on up window' })
 
 -- vim.keymap.set('t', '<D-v>', function()
 --   local clip = vim.fn.getreg('+')
@@ -118,6 +129,23 @@ return {
               function(self) self:hide() end,
               mode = "t",
               desc = "Hide Terminal",
+            },
+            switch_to_editor = {
+              "<A-ESC>",
+              function(_self)
+                local wins = vim.api.nvim_tabpage_list_wins(0)
+                local top_win, top_row = nil, math.huge
+                for _, win in ipairs(wins) do
+                  local pos = vim.api.nvim_win_get_position(win)
+                  if pos[1] < top_row then
+                    top_row = pos[1]
+                    top_win = win
+                  end
+                end
+                if top_win then vim.api.nvim_set_current_win(top_win) end
+              end,
+              mode = "t",
+              desc = "switch to editor top window"
             },
             toggle_fullscreen = {
               "<A-z>",

@@ -291,8 +291,8 @@ end ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
 -- new file
-vim.keymap.set('n', '<c-n><c-n>', ':e <C-R>=fnamemodify(@%, ":h")<CR>/', { desc = 'Open current buffer file' })
-vim.keymap.set('n', '<c-n><c-o>', ':e<space>', { desc = 'Open file' })
+vim.keymap.set('n', '<c-n><c-o>', ':e <C-R>=fnamemodify(@%, ":h")<CR>/', { desc = 'Open current buffer file' })
+vim.keymap.set('n', '<c-n><c-n>', ':e<space>', { desc = 'Open file' })
 
 -- Track buffers opened per tab
 vim.api.nvim_create_autocmd('BufWinEnter', {

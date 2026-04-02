@@ -147,6 +147,9 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
           "workspaceSymbol"
         },
       },
+      on_error = function(code)
+        if code == 'NO_RESULT_CALLBACK_FOUND' then return true end
+      end,
       on_new_config = function(config, root_dir)
         -- NOTE: to initialize .ruby-lsp/Gemfile
         -- rvm use

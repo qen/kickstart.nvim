@@ -1,15 +1,24 @@
 -- vim.keymap.set('t', '<A-Escape>', '<C-\\><C-N>', { desc = 'Escape terminal mode', noremap = true, silent = true })
 vim.keymap.set('t', '<C-u>', '<C-\\><C-n><C-u>', { desc = 'Scroll up in terminal' })
 vim.keymap.set('t', '<C-d>', '<C-\\><C-n><C-d>', { desc = 'Scroll down in terminal' })
-vim.keymap.set('n', '<A-ESC>', function()
+local function toggle_terminal_focus()
+  local cur_buf = vim.api.nvim_get_current_buf()
+  local in_terminal = vim.bo[cur_buf].buftype == 'terminal'
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    if vim.bo[vim.api.nvim_win_get_buf(win)].buftype == 'terminal' then
+    local buf = vim.api.nvim_win_get_buf(win)
+    local is_term = vim.bo[buf].buftype == 'terminal'
+    if in_terminal and not is_term then
+      vim.api.nvim_set_current_win(win)
+      return
+    elseif not in_terminal and is_term then
       vim.api.nvim_set_current_win(win)
       vim.cmd('startinsert')
       return
     end
   end
-end, { desc = 'Switch to terminal window' })
+end
+vim.keymap.set({ 'n' }, '<C-SPACE>', toggle_terminal_focus, { desc = 'Toggle focus between terminal and editor' })
+vim.keymap.set({ 't' }, '<C-SPACE>', '<C-\\><C-n>', { desc = 'Escape to normal mode' })
 
 -- vim.keymap.set('t', '<C-w>', '<C-\\><C-n><C-w>', { desc = 'Focus on up window' })
 
@@ -130,23 +139,19 @@ return {
               mode = "t",
               desc = "Hide Terminal",
             },
-            switch_to_editor = {
+            close = {
               "<A-ESC>",
-              function(_self)
-                local wins = vim.api.nvim_tabpage_list_wins(0)
-                local top_win, top_row = nil, math.huge
-                for _, win in ipairs(wins) do
-                  local pos = vim.api.nvim_win_get_position(win)
-                  if pos[1] < top_row then
-                    top_row = pos[1]
-                    top_win = win
-                  end
-                end
-                if top_win then vim.api.nvim_set_current_win(top_win) end
-              end,
+              function(self) self:close() end,
               mode = "t",
-              desc = "switch to editor top window"
+              desc = "Close Terminal",
             },
+            -- switch_to_editor = {
+            --   -- "<C-\\>",
+            --   "<C-SPACE>",
+            --   '<C-\\><C-n>',
+            --   mode = "t",
+            --   desc = "switch to editor top window"
+            -- },
             toggle_fullscreen = {
               "<A-z>",
               function(self)

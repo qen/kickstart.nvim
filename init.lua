@@ -375,7 +375,14 @@ vim.api.nvim_create_autocmd('VimEnter', {
           end
         end
         if first_buf then
+          local empty_buf = vim.api.nvim_get_current_buf()
           vim.api.nvim_set_current_buf(first_buf)
+          if vim.api.nvim_buf_is_valid(empty_buf)
+              and vim.bo[empty_buf].buflisted
+              and vim.api.nvim_buf_get_name(empty_buf) == ''
+              and not vim.bo[empty_buf].modified then
+            vim.api.nvim_buf_delete(empty_buf, {})
+          end
         end
       end)
       -- vim.cmd("tabnew")  -- Opens a second tab (first is always present by default)

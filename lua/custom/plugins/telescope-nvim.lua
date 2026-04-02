@@ -196,7 +196,7 @@ return {
           -- },
         },
         buffers = { mappings = cursor_dir_mappings },
-        old_files = {
+        oldfiles = {
           file_sorter = require('telescope.sorters').fuzzy_with_index_bias,
           mappings = cursor_dir_mappings,
         },

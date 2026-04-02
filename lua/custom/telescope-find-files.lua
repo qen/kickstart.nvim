@@ -232,7 +232,8 @@ function M.find_files_with_context(override_dir, override_query, suffix_priority
         actions.close(prompt_bufnr)
         local parent = vim.fn.fnamemodify(current_dir, ':h')
         if parent == current_dir then return end
-        M.find_files_with_context(parent, suffix_priority and query or current_query, suffix_priority, current_dir)
+        -- M.find_files_with_context(parent, suffix_priority and query or current_query, suffix_priority, current_dir)
+        M.find_files_with_context(parent, override_query, suffix_priority, override_top_dir)
       end)
       map({ 'i', 'n' }, '<C-r>', function()
         actions.close(prompt_bufnr)
@@ -250,17 +251,24 @@ function M.find_files_with_context(override_dir, override_query, suffix_priority
         }
         -- M.find_files_with_context(nil, nil, nil, current_dir)
       end)
+      map({ 'i', 'n' }, '<C-f>', function()
+        actions.close(prompt_bufnr)
+        local current_query = action_state.get_current_line()
+        if current_query and current_query ~= '' then
+          M.find_files_with_context(current_dir, current_query, true)
+        else
+          if override_top_dir and override_top_dir ~= '' then
+            M.find_files_with_context(current_dir, nil, nil, nil)
+          else
+            M.find_files_with_context(current_dir, nil, nil, current_dir)
+          end
+        end
+      end)
       if suffix_priority then
         map({ 'i', 'n' }, '<C-Space>', function()
+          actions.close(prompt_bufnr)
           -- local current_query = action_state.get_current_line()
           M.find_files_with_context(current_dir, query, false)
-        end)
-      else
-        map({ 'i', 'n' }, '<C-f>', function()
-          local current_query = action_state.get_current_line()
-          if current_query and current_query ~= '' then
-            M.find_files_with_context(current_dir, current_query, true)
-          end
         end)
       end
       return true

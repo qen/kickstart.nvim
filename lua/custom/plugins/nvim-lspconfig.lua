@@ -114,7 +114,6 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
     -- === ruby_lsp via project binstub or bundle exec ===
 
     vim.lsp.config('ruby_lsp', {
-      enabled = vim.g.run_ruby_lsp,
       filetypes = { 'ruby' },
       root_markers = { 'Gemfile', '.git' },
       single_file_support = false,
@@ -147,38 +146,30 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
           "workspaceSymbol"
         },
       },
+      -- Override reuse_client to fix the default's broken cmd_cwd check
+      -- (first client never gets cmd_cwd set, causing duplicate instances)
+      reuse_client = function(client, config)
+        return client.root_dir == config.root_dir
+      end,
+      -- NOTE: on_new_config is not supported by vim.lsp.config (Neovim 0.11+ API).
+      -- Use cmd as a function instead to set bundle exec and BUNDLE_GEMFILE.
+      cmd = function(dispatchers, config)
+        local root = config and config.root_dir or vim.fn.getcwd()
+        local gemfile = root .. '/.ruby-lsp/Gemfile'
+        local env = {}
+        if (vim.uv or vim.loop).fs_stat(gemfile) then
+          env.BUNDLE_GEMFILE = gemfile
+        else
+          env.BUNDLE_GEMFILE = root .. '/Gemfile'
+        end
+        return vim.lsp.rpc.start(
+          { 'bundle', 'exec', 'ruby-lsp' },
+          dispatchers,
+          { cwd = root, env = env }
+        )
+      end,
       on_error = function(code)
         if code == 'NO_RESULT_CALLBACK_FOUND' then return true end
-      end,
-      on_new_config = function(config, root_dir)
-        -- NOTE: to initialize .ruby-lsp/Gemfile
-        -- rvm use
-        -- gem install ruby-lsp
-        -- ruby-lsp
-
-        -- local bin = root_dir .. '/bin/ruby-lsp'
-        -- if (vim.uv or vim.loop).fs_stat(bin) then
-        --   config.cmd = { bin }
-        --   config.cmd_env = nil
-        -- else
-        --   config.cmd = { 'bundle', 'exec', 'ruby-lsp' }
-        --   config.cmd_env = { BUNDLE_GEMFILE = root_dir .. '/Gemfile' }
-        -- end
-
-        -- local ruby_lsp_gemfile = vim.fn.getenv("RUBY_LSP_GEMFILE")
-        -- if ruby_lsp_gemfile == vim.NIL or ruby_lsp_gemfile == "" then
-        --   -- bundle install --gemfile=~/.ruby-lsp/Gemfile
-        --   ruby_lsp_gemfile = "~/.ruby-lsp/Gemfile"
-        -- end
-
-        local ruby_lsp_gemfile = root_dir .. '/.ruby-lsp/Gemfile'
-        if (vim.uv or vim.loop).fs_stat(ruby_lsp_gemfile) then
-          config.cmd_env = { BUNDLE_GEMFILE = ruby_lsp_gemfile }
-        else
-          config.cmd_env = { BUNDLE_GEMFILE = root_dir .. '/Gemfile' }
-        end
-
-        config.cmd = { 'bundle', 'exec', 'ruby-lsp' }
       end,
     })
 

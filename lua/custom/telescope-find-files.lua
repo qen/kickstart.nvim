@@ -242,15 +242,16 @@ function M.find_files_with_context(override_dir, override_query, suffix_priority
           prompt_title = 'Live Grep in ' .. current_dir,
         }
       end)
-      map({ 'i', 'n' }, '<C-d>', function()
-        actions.close(prompt_bufnr)
-        require('telescope').extensions.file_browser.file_browser {
-          path = current_dir,
-          select_buffer = true,
-          prompt_path = true,
-        }
-        -- M.find_files_with_context(nil, nil, nil, current_dir)
-      end)
+      if not require('custom.git-merge').in_git_merge_mode() then
+        map({ 'i', 'n' }, '<C-d>', function()
+          actions.close(prompt_bufnr)
+          require('telescope').extensions.file_browser.file_browser {
+            path = current_dir,
+            select_buffer = true,
+            prompt_path = true,
+          }
+        end)
+      end
       map({ 'i', 'n' }, '<C-f>', function()
         actions.close(prompt_bufnr)
         local current_query = action_state.get_current_line()

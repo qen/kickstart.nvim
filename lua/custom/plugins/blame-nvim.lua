@@ -2,6 +2,18 @@
 --  I promise not to create any merge conflicts in this directory :)
 --
 -- See the kickstart.nvim README for more information
+
+vim.api.nvim_create_user_command("Mergetool", function()
+  local f = vim.fn.expand("%")
+  vim.cmd("diffthis")
+  vim.cmd("leftabove vsplit | enew | setlocal buftype=nofile")
+  vim.cmd("read !git show :2:" .. f)
+  vim.cmd("diffthis")
+  vim.cmd("rightbelow vsplit | enew | setlocal buftype=nofile")
+  vim.cmd("read !git show :3:" .. f)
+  vim.cmd("diffthis")
+end, {})
+
 return { -- vim-fugitive
   'FabijanZulj/blame.nvim',
   lazy = false,
@@ -82,7 +94,6 @@ return { -- vim-fugitive
     vim.keymap.set('n', '<BS>3', ':diffget 3<CR>', { desc = 'diff get 3' })
     vim.keymap.set('n', '<BS>R', ':%diffget REMOTE<CR>', { desc = 'diff get all remote, the branch merging' })
     vim.keymap.set('n', '<BS>L', ':%diffget LOCAL<CR>', { desc = 'diff get all local, current checkout branch' })
-
 
     local which_key = require('which-key')
 

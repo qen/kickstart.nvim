@@ -20,6 +20,10 @@ local function dir_exists(path)
   return stat and stat.type == "directory"
 end
 
+local function not_merge_mode()
+  return not require('custom.git-merge').in_git_merge_mode()
+end
+
 return {
   'nvim-telescope/telescope.nvim',
   event = 'VimEnter',
@@ -30,10 +34,13 @@ return {
       'nvim-telescope/telescope-fzf-native.nvim',
       build = 'make',
       cond = function()
-        return vim.fn.executable 'make' == 1
+        return vim.fn.executable 'make' == 1 and not_merge_mode()
       end,
     },
-    { 'nvim-telescope/telescope-ui-select.nvim' },
+    {
+      'nvim-telescope/telescope-ui-select.nvim',
+      cond = not_merge_mode,
+    },
     {
       'nvim-tree/nvim-web-devicons',
       enabled = vim.g.have_nerd_font,
@@ -74,9 +81,13 @@ return {
         }
       end,
     },
-    { 'nvim-telescope/telescope-file-browser.nvim' },
+    {
+      'nvim-telescope/telescope-file-browser.nvim',
+      cond = not_merge_mode,
+    },
     {
       'kelly-lin/telescope-ag',
+      cond = not_merge_mode,
       dependencies = { 'nvim-telescope/telescope.nvim' },
       config = function()
         local telescope_ag = require 'telescope-ag'
@@ -97,6 +108,7 @@ return {
     local actions = require('telescope.actions')
     local builtin = require('telescope.builtin')
     local which_key = require('which-key')
+    local in_merge = require('custom.git-merge').in_git_merge_mode()
 
     local function similar_document_name()
       local filename = vim.fn.expand('%:t:r')
@@ -159,16 +171,18 @@ return {
           actions.close(prompt_bufnr)
           find_files_with_context(nil, nil, nil, prompt_cursor_dir())
         end,
-        ['<C-d>'] = function(prompt_bufnr)
-          actions.close(prompt_bufnr)
-          require('telescope').extensions.file_browser.file_browser {
-            path = prompt_cursor_dir(),
-            select_buffer = true,
-            prompt_path = true,
-          }
-        end
       }
     }
+    if not in_merge then
+      cursor_dir_mappings['i']['<C-d>'] = function(prompt_bufnr)
+        actions.close(prompt_bufnr)
+        require('telescope').extensions.file_browser.file_browser {
+          path = prompt_cursor_dir(),
+          select_buffer = true,
+          prompt_path = true,
+        }
+      end
+    end
 
     -- NOTE: [[ Configure Telescope ]]
     require('telescope').setup {
@@ -250,11 +264,14 @@ return {
       },
     }
 
-    -- Enable Telescope extensions if they are installed
-    pcall(require('telescope').load_extension, 'fzf')
-    pcall(require('telescope').load_extension, 'ui-select')
-    pcall(require('telescope').load_extension, 'ag')
-    pcall(require('telescope').load_extension, 'file_browser')
+    -- Enable Telescope extensions if they are installed.
+    -- In git merge mode these deps are gated off, so skip loading them.
+    if not in_merge then
+      pcall(require('telescope').load_extension, 'fzf')
+      pcall(require('telescope').load_extension, 'ui-select')
+      pcall(require('telescope').load_extension, 'ag')
+      pcall(require('telescope').load_extension, 'file_browser')
+    end
 
     -- Keymaps: Peek helpers
     vim.keymap.set('n', '<leader>ph', builtin.help_tags, { desc = 'Peek [H]elp' })
@@ -289,15 +306,17 @@ return {
     end, { desc = 'Find Opened Files' })
 
     -- Keymaps: Search
-    vim.keymap.set('n', '<leader>sd', function()
-      require('telescope').extensions.file_browser.file_browser {
-        path = '%:p:h'
-      }
-    end, { desc = 'Search Browse buffer [D]irectory' })
+    if not in_merge then
+      vim.keymap.set('n', '<leader>sd', function()
+        require('telescope').extensions.file_browser.file_browser {
+          path = '%:p:h'
+        }
+      end, { desc = 'Search Browse buffer [D]irectory' })
 
-    vim.keymap.set('n', '<leader>sw', function()
-      require('telescope').extensions.file_browser.file_browser()
-    end, { desc = 'Search Browse <c[w]d>irectory' })
+      vim.keymap.set('n', '<leader>sw', function()
+        require('telescope').extensions.file_browser.file_browser()
+      end, { desc = 'Search Browse <c[w]d>irectory' })
+    end
 
     vim.keymap.set('n', '<leader>sc', function()
       vim.cmd 'Easypick changed_files'

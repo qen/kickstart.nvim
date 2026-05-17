@@ -401,6 +401,101 @@ vim.api.nvim_create_autocmd('VimEnter', {
   end,
 })
 
+-- NOTE: Mergetool
+vim.api.nvim_create_user_command("Mergetool", function()
+  -- Find conflicted files (unmerged paths in the index)
+  local conflicted = vim.fn.systemlist("git diff --name-only --diff-filter=U")
+  if vim.v.shell_error ~= 0 then
+    vim.notify("Not in a git repo (or git error)", vim.log.levels.ERROR)
+    return
+  end
+  if #conflicted == 0 then
+    vim.notify("No conflicted files", vim.log.levels.INFO)
+    return
+  end
+
+  -- Resolve to absolute path so :edit works regardless of cwd
+  local root = vim.fn.systemlist("git rev-parse --show-toplevel")[1]
+  local rel = conflicted[1]
+  local abs = root .. "/" .. rel
+
+  -- Open the first conflicted file (this becomes MERGED, middle pane)
+  vim.cmd("edit " .. vim.fn.fnameescape(abs))
+  local ft = vim.bo.filetype
+  vim.cmd("diffthis")
+
+  -- Left pane: OURS (stage :2:)
+  vim.cmd("leftabove vsplit | enew")
+  vim.bo.buftype = "nofile"
+  vim.bo.bufhidden = "wipe"
+  vim.bo.filetype = ft
+  vim.cmd("silent 0read !git show " .. vim.fn.shellescape(":2:" .. rel))
+  vim.cmd("silent $delete _") -- strip trailing empty line from the empty buffer
+  vim.cmd("normal! gg")
+  vim.cmd("diffthis")
+
+  -- Back to MERGED
+  vim.cmd("wincmd l")
+
+  -- Right pane: THEIRS (stage :3:)
+  vim.cmd("rightbelow vsplit | enew")
+  vim.bo.buftype = "nofile"
+  vim.bo.bufhidden = "wipe"
+  vim.bo.filetype = ft
+  vim.cmd("silent 0read !git show " .. vim.fn.shellescape(":3:" .. rel))
+  vim.cmd("silent $delete _")
+  vim.cmd("normal! gg")
+  vim.cmd("diffthis")
+
+  -- Land cursor in MERGED
+  vim.cmd("wincmd h")
+
+  -- Tell the user what's left
+  if #conflicted > 1 then
+    local rest = table.concat(vim.list_slice(conflicted, 2), ", ")
+    vim.notify(string.format("Opened 1/%d: %s\nRemaining: %s",
+      #conflicted, rel, rest), vim.log.levels.INFO)
+  else
+    vim.notify("Opened: " .. rel, vim.log.levels.INFO)
+  end
+end, {})
+
+-- NOTE: MergetoolDone
+vim.api.nvim_create_user_command("MergetoolDone", function()
+  -- Check the current buffer for leftover conflict markers
+  local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  for i, line in ipairs(lines) do
+    if line:match("^<<<<<<<") or line:match("^=======$") or line:match("^>>>>>>>") then
+      vim.notify(string.format("Conflict marker still present at line %d", i),
+        vim.log.levels.ERROR)
+      return
+    end
+  end
+
+  local file = vim.fn.expand("%")
+  vim.cmd("write")
+  vim.cmd("diffoff!")
+  vim.cmd("only")
+
+  -- Stage the file
+  local out = vim.fn.system({ "git", "add", "--", file })
+  if vim.v.shell_error ~= 0 then
+    vim.notify("git add failed: " .. out, vim.log.levels.ERROR)
+    return
+  end
+  vim.notify("Resolved: " .. file, vim.log.levels.INFO)
+
+  -- Check if more conflicts remain
+  local remaining = vim.fn.systemlist("git diff --name-only --diff-filter=U")
+  if #remaining > 0 then
+    vim.notify(string.format("%d conflict(s) left. Run :Mergetool for next.",
+      #remaining), vim.log.levels.INFO)
+  else
+    vim.notify("All conflicts resolved. Run :!git commit to finish.",
+      vim.log.levels.INFO)
+  end
+end, {})
+
 -- vim.api.nvim_create_autocmd('CursorMovedI', {
 --   pattern = '*',
 --   callback = function()

@@ -39,22 +39,47 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       local sep_color = '%#MiniStatuslinePathSeparator#'
       local colored_sep = sep_color .. sep .. '%#' .. filename_color .. '#'
 
-      -- Apply filename_color to the first part explicitly
-      parts[1] = '%#' .. filename_color .. '#' .. parts[1]
-
-      local win_width = vim.api.nvim_win_get_width(0)
-      local full_path = table.concat(parts, colored_sep)
-      local max_len = math.floor(win_width * (max_pct_width or 0.4))
-
-      if #full_path <= max_len or #parts <= 2 then
-        return full_path
+      -- Render a list of path segments with the proper highlight groups.
+      local function render(segs)
+        local out = '%#' .. filename_color .. '#' .. segs[1]
+        for i = 2, #segs do
+          out = out .. colored_sep .. segs[i]
+        end
+        return out
       end
 
-      local first = parts[1]
-      local folder = parts[#parts - 1] or ''
-      local last = parts[#parts]
+      -- Visible width as actually displayed: joins the raw segments (without
+      -- highlight escape codes) so the threshold reflects on-screen length.
+      local function visible_width(segs)
+        return vim.fn.strdisplaywidth(table.concat(segs, sep))
+      end
 
-      return first .. colored_sep .. '…' .. colored_sep .. folder .. colored_sep .. last
+      local win_width = vim.api.nvim_win_get_width(0)
+      local max_len = math.floor(win_width * (max_pct_width or 0.4))
+      local n = #parts
+
+      -- Show the full path when it's shallow or already fits on screen.
+      if n <= 2 or visible_width(parts) <= max_len then
+        return render(parts)
+      end
+
+      -- Too long: abbreviate leading dirs to a single letter, keep the domain
+      -- name (3rd segment) and the last two segments (parent dir + file) full,
+      -- and collapse anything in between into a single ellipsis.
+      --   app/domains/assistant/services/broadcaster.rb -> a d assistant services broadcaster.rb
+      --   app/domains/assistant/services/tools/base.rb  -> a d assistant … tools base.rb
+      local segs = {}
+      for i = 1, n do
+        if i == 3 or i >= n - 1 then
+          segs[#segs + 1] = parts[i]
+        elseif i <= 2 then
+          segs[#segs + 1] = vim.fn.strcharpart(parts[i], 0, 1)
+        elseif segs[#segs] ~= '…' then
+          segs[#segs + 1] = '…'
+        end
+      end
+
+      return render(segs)
     end
 
     local function status_filename(hl)

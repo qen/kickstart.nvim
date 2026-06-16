@@ -57,7 +57,7 @@ return {
       'axkirillov/easypick.nvim',
       config = function()
         local easypick = require 'easypick'
-        local base_branch = 'master'
+        local base_branch = vim.fn.system('git rev-parse --abbrev-ref origin/HEAD'):gsub('origin/', ''):gsub('%s+', '')
 
         easypick.setup {
           pickers = {
@@ -68,7 +68,7 @@ return {
             },
             {
               name = 'changed_files',
-              command = 'git diff --name-only $(git merge-base HEAD ' .. base_branch .. ' )',
+              command = 'git log --diff-filter=ACM --name-only --pretty=format: $(git rev-parse --abbrev-ref origin/HEAD)..HEAD | sort -u | grep -v "^$"',
               previewer = easypick.previewers.branch_diff { base_branch = base_branch },
               theme = 'ivy',
             },

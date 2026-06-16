@@ -351,6 +351,13 @@ vim.keymap.set('n', '<F7>', ':let @*=expand("%")<CR>', { desc = 'Copy file path 
 vim.keymap.set('n', '<F8>', ':let @*=expand("%:p")<CR>', { desc = 'Copy full file path to clipboard' })
 
 vim.keymap.set('n', '<C-j>', '<C-^>', { desc = 'jump previous open file', noremap = true, silent = true })
+
+vim.keymap.set('n', '<leader>ct', function()
+  vim.bo.expandtab = true
+  vim.bo.tabstop = 2
+  vim.bo.shiftwidth = 2
+  vim.cmd 'retab'
+end, { desc = '[C]onvert [T]abs to spaces (2)' })
 vim.keymap.set('n', '<C-i>', '<C-i>', { desc = 'Jump forward in jumplist', noremap = true, silent = true })
 
 -- NOTE: Open file opened history if no argument passed
@@ -658,7 +665,7 @@ require('lazy').setup({
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.

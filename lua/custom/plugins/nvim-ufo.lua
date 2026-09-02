@@ -15,11 +15,11 @@ return {
     provider_selector = function(_bufnr, _filetype, _buftype)
       return { 'treesitter', 'indent' }
     end,
-    -- Reproduces the old custom_fold_text: "<line>: ⚡ N lines", but keeps the
+    -- Reproduces the old custom_fold_text ("<line>: N lines" with a fold icon), keeping the
     -- line's syntax highlighting instead of a flat Folded colour.
     fold_virt_text_handler = function(virt_text, lnum, end_lnum, width, truncate)
       local result = {}
-      local suffix = (': ⚡ %d lines'):format(end_lnum - lnum + 1)
+      local suffix = ('   %d lines'):format(end_lnum - lnum + 1) -- nf-fa-ellipsis_h
       local suffix_width = vim.fn.strdisplaywidth(suffix)
       local target_width = width - suffix_width
       local cur_width = 0

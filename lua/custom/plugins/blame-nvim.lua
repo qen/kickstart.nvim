@@ -3,17 +3,6 @@
 --
 -- See the kickstart.nvim README for more information
 
-vim.api.nvim_create_user_command("Mergetool", function()
-  local f = vim.fn.expand("%")
-  vim.cmd("diffthis")
-  vim.cmd("leftabove vsplit | enew | setlocal buftype=nofile")
-  vim.cmd("read !git show :2:" .. f)
-  vim.cmd("diffthis")
-  vim.cmd("rightbelow vsplit | enew | setlocal buftype=nofile")
-  vim.cmd("read !git show :3:" .. f)
-  vim.cmd("diffthis")
-end, {})
-
 return { -- vim-fugitive
   'FabijanZulj/blame.nvim',
   lazy = false,

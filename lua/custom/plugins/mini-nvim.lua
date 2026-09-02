@@ -197,7 +197,7 @@ return { -- mini-nvim: Collection of various small independent plugins/modules
       style = 'glyph',
     }
     require('mini.git').setup()
-    require('mini.diff').setup()
+    -- NOTE: diff signs/summary come from gitsigns (MiniStatusline.section_diff falls back to it)
     require('mini.tabline').setup {
       -- Whether to show file icons (requires 'mini.icons')
       show_icons = true,

@@ -96,10 +96,10 @@ return { -- conform: Autoformat
         args = {
           'exec',
           'rubocop',
-          '--auto-correct',
+          '--autocorrect',
           '--except',
-          'List/UselessAssignment',
-          'List/UnusedMethodArgument',
+          'Lint/UselessAssignment',
+          'Lint/UnusedMethodArgument',
           '--stdin',
           '$FILENAME',
           '--format',

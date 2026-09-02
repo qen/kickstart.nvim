@@ -3,7 +3,7 @@
 --
 -- See the kickstart.nvim README for more information
 -- NOTE: LSP Plugins
-vim.lsp.set_log_level('WARN')
+vim.lsp.log.set_level(vim.log.levels.WARN)
 return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language server
   'neovim/nvim-lspconfig',
   dependencies = {
@@ -17,21 +17,8 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
     -- Useful status updates for LSP.
     { 'j-hui/fidget.nvim', opts = {} },
 
-    -- Allows extra capabilities provided by nvim-cmp
-    'hrsh7th/cmp-nvim-lsp',
-  },
-  opts = {
-    -- add any global capabilities here
-    capabilities = {},
-    -- Automatically format on save
-    autoformat = false,
-    -- options for vim.lsp.buf.format
-    -- `bufnr` and `filter` is handled by the LazyVim formatter,
-    -- but can be also overridden when specified
-    format = {
-      formatting_options = nil,
-      timeout_ms = nil,
-    },
+    -- Allows extra capabilities provided by blink.cmp
+    'saghen/blink.cmp',
   },
   config = function()
 
@@ -44,30 +31,24 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
           vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
         end
 
-        map('gd', function() require('telescope.builtin').lsp_definitions { show_line = false } end, '[G]oto [D]efinition')
-        map('gr', function() require('telescope.builtin').lsp_references  { show_line = false } end, '[G]oto [R]eferences')
-        map('gI', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
+        map('gd', function() Snacks.picker.lsp_definitions() end, '[G]oto [D]efinition')
+        map('gr', function() Snacks.picker.lsp_references() end, '[G]oto [R]eferences')
+        map('gI', function() Snacks.picker.lsp_implementations() end, '[G]oto [I]mplementation')
         map('<leader>tc', vim.lsp.buf.code_action, '[T]oggle [C]ode Action', { 'n','x' })
         map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
         map('\\r', vim.lsp.buf.rename, '[R]ename')
-        map('\\\\', require('telescope.builtin').lsp_document_symbols, 'Document [S]ymbols')
-        map('\\<ENTER>', require('telescope.builtin').lsp_dynamic_workspace_symbols, 'Workspace [S]ymbols')
+        map('\\\\', function() Snacks.picker.lsp_symbols() end, 'Document [S]ymbols')
+        map('\\<ENTER>', function() Snacks.picker.lsp_workspace_symbols() end, 'Workspace [S]ymbols')
 
+        -- Formerly nvim-treesitter-refactor keys, now backed by LSP / snacks.words
+        -- (gO = document symbols is a Neovim 0.11 default, gd/gD are mapped above)
+        map('gR', vim.lsp.buf.rename, '[R]ename symbol')
+        map('gn', function() Snacks.words.jump(vim.v.count1, true) end, 'Goto [N]ext usage')
+        map('gp', function() Snacks.words.jump(-vim.v.count1, true) end, 'Goto [P]revious usage')
+
+        -- NOTE: reference highlighting under the cursor is provided by snacks.words
         local client = vim.lsp.get_client_by_id(event.data.client_id)
-        if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
-          local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
-          vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, { buffer = event.buf, group = highlight_augroup, callback = vim.lsp.buf.document_highlight })
-          vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, { buffer = event.buf, group = highlight_augroup, callback = vim.lsp.buf.clear_references })
-          vim.api.nvim_create_autocmd('LspDetach', {
-            group = vim.api.nvim_create_augroup('kickstart-lsp-detach', { clear = true }),
-            callback = function(event2)
-              vim.lsp.buf.clear_references()
-              vim.api.nvim_clear_autocmds { group = 'kickstart-lsp-highlight', buffer = event2.buf }
-            end,
-          })
-        end
-
-        if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
+        if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
           map('<leader>th', function()
             vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
           end, '[T]oggle Inlay [H]ints')
@@ -75,9 +56,8 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
       end,
     })
 
-    -- === Capabilities (cmp) ===
-    local capabilities = vim.lsp.protocol.make_client_capabilities()
-    capabilities = vim.tbl_deep_extend('force', capabilities, require('cmp_nvim_lsp').default_capabilities())
+    -- === Capabilities (blink.cmp) ===
+    local capabilities = require('blink.cmp').get_lsp_capabilities()
 
     -- === Server definitions ===
     local servers = {
@@ -179,8 +159,9 @@ return { -- nvm-lsconfig: Main LSP Configuration, :LspStop to stop language serv
     vim.list_extend(ensure_installed, { 'stylua' })
     require('mason-tool-installer').setup({ ensure_installed = ensure_installed })
 
-    -- If you still use mason-lspconfig for registry, keep it minimal (no handlers calling lspconfig)
-    require('mason-lspconfig').setup({})
+    -- Servers are enabled explicitly below (honouring `enabled`), so stop
+    -- mason-lspconfig v2 from auto-enabling every installed server.
+    require('mason-lspconfig').setup({ automatic_enable = false })
 
     -- Skip LSP entirely when nvim is launched during an active merge.
     if require('custom.git-merge').in_git_merge_mode() then

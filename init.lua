@@ -163,49 +163,10 @@ vim.opt.scrolloff = 10
 vim.opt.foldcolumn = '0'
 vim.opt.foldlevel = 2
 vim.opt.foldnestmax = 10
-vim.opt.foldmethod = 'expr'
-vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+vim.opt.foldenable = true
 vim.opt.wrap = false
-
--- NOTE: Disable foldexpr when the buffer is modified
-vim.api.nvim_create_autocmd("TextChanged", {
-  pattern = "*",
-  callback = function()
-    if vim.bo.modified then
-      vim.opt_local.foldmethod = "manual"
-      vim.opt_local.foldexpr = "0"
-    end
-  end,
-})
-
--- NOTE: Re-enable folding on save
-vim.api.nvim_create_autocmd("BufWritePost", {
-  pattern = "*",
-  callback = function()
-    local cursor_line = vim.fn.line('.')
-
-    -- Restore foldmethod and foldexpr
-    vim.opt_local.foldmethod = "expr"
-    vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-
-    -- Force re-evaluation of folds
-    vim.cmd("normal! zx")
-    vim.cmd("normal! zv") -- open folds under cursor
-
-    -- Open fold at cursor line (if it was closed)
-    -- vim.cmd(cursor_line .. "foldopen!")
-  end,
-})
-
-function _G.custom_fold_text()
-  local line = vim.fn.getline(vim.v.foldstart)
-
-  local line_count = vim.v.foldend - vim.v.foldstart + 1
-  return line .. ': ⚡ ' .. line_count .. ' lines'
-end
-vim.opt.foldtext = 'v:lua.custom_fold_text()'
-
--- vim.wo.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+-- NOTE: fold provider (treesitter -> indent), fold text and fold persistence
+-- across edits are handled by nvim-ufo, see lua/custom/plugins/nvim-ufo.lua
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -221,10 +182,10 @@ vim.keymap.set('n', '\\D', function()
   local is_enabled = vim.diagnostic.is_enabled({ buf = bufnr })  -- ✅ correct usage
 
   if is_enabled then
-    vim.diagnostic.disable(bufnr)
+    vim.diagnostic.enable(false, { bufnr = bufnr })
     vim.notify("Diagnostics disabled", vim.log.levels.WARN)
   else
-    vim.diagnostic.enable(bufnr)
+    vim.diagnostic.enable(true, { bufnr = bufnr })
     vim.notify("Diagnostics enabled", vim.log.levels.INFO)
   end
 end, { desc = "Toggle diagnostics in current buffer" })
@@ -257,12 +218,12 @@ end, { desc = "Toggle diagnostics in current buffer" })
 
 -- NOTE: Highlight when yanking (copying) text
 --  Try it with `yap` in normal mode
---  See `:help vim.highlight.on_yank()`
+--  See `:help vim.hl.on_yank()`
 vim.api.nvim_create_autocmd('TextYankPost', {
   desc = 'Highlight when yanking (copying) text',
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
   callback = function()
-    vim.highlight.on_yank()
+    vim.hl.on_yank()
   end,
 })
 
@@ -364,7 +325,6 @@ vim.keymap.set('n', '<C-i>', '<C-i>', { desc = 'Jump forward in jumplist', norem
 -- > automatically open two empty tabs
 vim.api.nvim_create_autocmd('VimEnter', {
   callback = function()
-    local first_arg = vim.fn.argv(0)
     if vim.fn.argc() == 0 then
       vim.schedule(function()
         -- require("telescope.builtin").oldfiles({ only_cwd = true })
@@ -394,17 +354,8 @@ vim.api.nvim_create_autocmd('VimEnter', {
       end)
       -- vim.cmd("tabnew")  -- Opens a second tab (first is always present by default)
       -- vim.cmd("tabprevious")  -- Opens a second tab (first is always present by default)
-    elseif first_arg and vim.fn.isdirectory(first_arg) == 1 then
-      -- NOTE: execute telescope
-      vim.schedule(function()
-        require('telescope').extensions.file_browser.file_browser {
-          path = first_arg,
-          select_buffer = true,
-          -- theme = 'ivy',
-          prompt_path = true,
-        }
-      end)
     end
+    -- NOTE: `nvim <directory>` is handled by snacks.explorer (replace_netrw)
   end,
 })
 
@@ -679,6 +630,9 @@ require('lazy').setup({
   -- In normal mode type `<space>sh` then write `lazy.nvim-plugin`
   -- you can continue same window with `<space>sr` which resumes last telescope search
 }, {
+  -- No plugin needs luarocks any more (image.nvim was the only one); this also
+  -- silences the hererocks warning in :checkhealth lazy
+  rocks = { enabled = false },
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
     -- default lazy.nvim defined Nerd Font icons, otherwise define a unicode icons table

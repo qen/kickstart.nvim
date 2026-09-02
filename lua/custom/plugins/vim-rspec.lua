@@ -12,18 +12,7 @@ return {
     vim.g.dispatch_tmux_height = "50%"
     vim.g.dispatch_quickfix_height = 15
 
-    -- normal mode mappings
-    local opts = { desc = "", buffer = 0 }  -- buffer-local when config runs
-    -- vim.keymap.set("n", "\\tt", vim.fn.RunNearestSpec, vim.tbl_extend("force", opts, { desc = "Run neares[T] spec" }))
-    -- vim.keymap.set("n", "\\tl", vim.fn.RunLastSpec,   vim.tbl_extend("force", opts, { desc = "Run [L]ast spec" }))
-    vim.keymap.set("n", "\\d",
-      function() vim.cmd.execute [["normal \<s-O>binding.pry if $pry\<ESC>:w\<CR>"]] end,
-      vim.tbl_extend("force", opts, { desc = "Insert [D]ebug binding.pry" })
-    )
-    vim.keymap.set("n", "\\b",
-      function() vim.cmd.execute [["normal \<s-O>$pry=1\<ESC>:w\<CR>"]] end,
-      vim.tbl_extend("force", opts, { desc = "Insert $pry=1" })
-    )
+    -- NOTE: \d and \b are registered buffer-locally in the FileType autocmd below
     -- vim.keymap.set("n", "\\mm", function() vim.cmd "Start specg dbmigrate" end, { desc = "Run db:migrate" })
     -- vim.keymap.set("n", "\\ml", function() vim.cmd "Start specg dbload" end,   { desc = "Run db:schema:load" })
 

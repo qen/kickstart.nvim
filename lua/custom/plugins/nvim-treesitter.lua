@@ -1,94 +1,90 @@
--- You can add your own plugins here or in other files in this directory!
---  I promise not to create any merge conflicts in this directory :)
+-- nvim-treesitter on the maintained `main` branch. The old `master` branch was
+-- archived in May 2025 and no longer receives parser or query updates.
 --
--- See the kickstart.nvim README for more information
-return { -- nvim-treesitter: Highlight, edit, and navigate code
-  'nvim-treesitter/nvim-treesitter',
-  dependencies = { 'nvim-treesitter/nvim-treesitter-refactor' },
-  build = ':TSUpdate',
-  main = 'nvim-treesitter.configs', -- Sets main module to use for opts
-  enabled = true,
-  -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
-  opts = {
-    ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'sql' },
-    -- Autoinstall languages that are not installed
-    auto_install = true,
-    highlight = {
-      enable = true,
-      -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
-      --  If you are experiencing weird indenting issues, add the language to
-      --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-      additional_vim_regex_highlighting = { 'ruby' },
-    },
-    indent = { enable = true, disable = { 'ruby' } },
-    refactor = {
-      highlight_definitions = {
-        enable = false,
-        -- Set to false if you have an `updatetime` of ~100.
-        clear_on_cursor_move = true,
-      },
-      highlight_current_scope = { enable = false },
-      smart_rename = {
-        enable = true,
-        keymaps = {
-          smart_rename = 'gR',
-        },
-      },
-      navigation = {
-        enable = true,
-        keymaps = {
-          goto_definition = 'gd',
-          list_definitions = 'gD',
-          list_definitions_toc = 'gO',
-          goto_next_usage = 'gn',
-          goto_previous_usage = 'gp',
-        },
-      },
-    },
-  },
-  config = function(_, opts)
-    require("nvim-treesitter.configs").setup(opts)
-    -- -- >>> Force comment color (TS + legacy), and re-apply after theme/TS reloads
-    -- local COLOR = "#ff0000" -- change me
-    --
-    -- local function apply_comment_color()
-    --   -- Tree-sitter (all langs)
-    --   vim.api.nvim_set_hl(0, "@comment", { fg = COLOR, italic = false })
-    --   -- Tree-sitter (ruby-specific)
-    --   vim.api.nvim_set_hl(0, "@comment.ruby", { fg = COLOR, italic = false })
-    --   -- Legacy/fallback
-    --   vim.api.nvim_set_hl(0, "Comment", { fg = COLOR, italic = false })
-    -- end
-    --
-    -- -- apply once now
-    -- apply_comment_color()
-    --
-    -- -- (re)apply after any colorscheme load
-    -- local grp = vim.api.nvim_create_augroup("ForceRubyCommentColor", { clear = true })
-    -- vim.api.nvim_create_autocmd("ColorScheme", {
-    --   group = grp,
-    --   callback = apply_comment_color,
-    -- })
-    --
-    -- -- also reassert ruby-specific highlight on buffer/filetype switches
-    -- vim.api.nvim_create_autocmd({ "FileType", "BufEnter" }, {
-    --   group = grp,
-    --   pattern = "ruby",
-    --   callback = function()
-    --     vim.api.nvim_set_hl(0, "@comment.ruby", { fg = COLOR, italic = false })
-    --   end,
-    -- })
-    -- -- <<< end force color
-  end
+-- `main` has no `configs` module, no `ensure_installed` and no `auto_install`:
+-- highlighting/indent are enabled per buffer from a FileType autocmd below,
+-- and missing parsers are installed on first use.
 
-  --
-  -- There are additional nvim-treesitter modules that you can use to interact
-  -- with nvim-treesitter. You should go explore a few and see what interests you:
-  --
-  --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-  --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-  --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
+-- Parsers that were installed under `master`, carried over. Not available on
+-- `main` and therefore dropped: jsonc (json parser handles it), norg, robots, tmux.
+local parsers = {
+  'asm', 'bash', 'c', 'css', 'csv', 'diff', 'dockerfile', 'embedded_template',
+  'git_config', 'git_rebase', 'gitcommit', 'gitignore', 'html', 'ini',
+  'javascript', 'json', 'lua', 'luadoc', 'markdown', 'markdown_inline',
+  'nginx', 'pem', 'perl', 'python', 'query', 'ruby', 'scss',
+  'slim', 'sql', 'ssh_config', 'toml', 'tsx', 'typescript', 'vim',
+  'vimdoc', 'xml', 'yaml',
 }
 
--- The line beneath this is called `modeline`. See `:help modeline`
--- vim: ts=2 sts=2 sw=2 et
+-- Filetypes that keep Vim regex highlighting on top of treesitter
+-- (was `highlight.additional_vim_regex_highlighting = { 'ruby' }`).
+local regex_highlight = { ruby = true }
+
+-- Filetypes that keep Vim's own indent rules (was `indent.disable = { 'ruby' }`).
+local no_ts_indent = { ruby = true }
+
+-- Checks the `main` install dir (stdpath('data')/site/parser), not the runtime
+-- path, so stale parsers left behind by `master` are never mistaken for installed.
+local function parser_installed(lang)
+  return vim.tbl_contains(require('nvim-treesitter').get_installed(), lang)
+end
+
+return {
+  'nvim-treesitter/nvim-treesitter',
+  branch = 'main',
+  lazy = false,
+  build = ':TSUpdate',
+  config = function()
+    local ts = require 'nvim-treesitter'
+    ts.setup {}
+
+    local available = {}
+    for _, lang in ipairs(ts.get_available()) do
+      available[lang] = true
+    end
+
+    -- ensure_installed: install anything from the list that is missing
+    local missing = vim.tbl_filter(function(lang)
+      return available[lang] and not parser_installed(lang)
+    end, parsers)
+    if #missing > 0 then
+      ts.install(missing)
+    end
+
+    local function enable(buf, lang)
+      if not vim.api.nvim_buf_is_valid(buf) then
+        return
+      end
+      local ok = pcall(vim.treesitter.start, buf, lang)
+      if not ok then
+        return
+      end
+      local ft = vim.bo[buf].filetype
+      if regex_highlight[ft] then
+        vim.bo[buf].syntax = ft
+      end
+      if not no_ts_indent[ft] then
+        vim.bo[buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+      end
+    end
+
+    vim.api.nvim_create_autocmd('FileType', {
+      group = vim.api.nvim_create_augroup('custom-treesitter', { clear = true }),
+      desc = 'Enable treesitter highlight/indent, auto-installing the parser',
+      callback = function(ev)
+        local lang = vim.treesitter.language.get_lang(ev.match)
+        if not lang or not available[lang] then
+          return
+        end
+        if parser_installed(lang) then
+          enable(ev.buf, lang)
+        else
+          -- auto_install
+          ts.install({ lang }):await(function()
+            enable(ev.buf, lang)
+          end)
+        end
+      end,
+    })
+  end,
+}
